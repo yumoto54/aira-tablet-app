@@ -437,14 +437,17 @@ class _AiraHomePageState extends State<AiraHomePage> {
             child: Center(
               child: AspectRatio(
                 aspectRatio: 1,
-                child: AnimatedSwitcher(
-                  // 目・口どちらの切り替えも自然に見えるよう、中間の速さにしておく。
-                  duration: const Duration(milliseconds: 80),
-                  child: Image.asset(
-                    _comboAssetPath(_eyesOpen, _currentMouthShape),
-                    key: ValueKey('${_eyesOpen}_$_currentMouthShape'),
-                    fit: BoxFit.contain,
-                  ),
+                // 以前はAnimatedSwitcherで毎回フェードさせていたが、喋っている間は
+                // 口の形が(多いと100ms間隔程度で)頻繁に変わるため、そのたびに顔
+                // 全体がフェードアウト/インし、「ずっと点滅している」ように見えて
+                // しまっていた。実際の口の動きは瞬間的な切り替わりの方が自然に
+                // 見えるため、フェードなしで即座に切り替える。
+                // gaplessPlayback を付けることで、アセット切り替え中に一瞬
+                // 画像が消える(空白になる)のも防いでいる。
+                child: Image.asset(
+                  _comboAssetPath(_eyesOpen, _currentMouthShape),
+                  fit: BoxFit.contain,
+                  gaplessPlayback: true,
                 ),
               ),
             ),
