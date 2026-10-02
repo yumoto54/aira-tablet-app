@@ -228,9 +228,15 @@ class _AiraHomePageState extends State<AiraHomePage> {
     // 認識エンジンの最終結果(onResult)が届いていないことがある。
     // 長い文章では誤差に隠れて気づかなかったが、短い発話では
     // 結果が空のまま次に進んでしまい、「認識されなかった」ことになっていた。
-    // 少しだけ待って最終結果が反映されるのを待つ。
-    if (_recognizedText.isEmpty) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    // 400msでは"how are you"(3単語)は直ったが"hi"/"hello"(1単語)には
+    // 足りなかったため、200ms刻みで最大1200msまで粘り強く待つ。
+    // (届いた時点ですぐ抜けるので、通常ケースへの遅延影響はない)
+    var waitedMs = 0;
+    const maxWaitMs = 1200;
+    const pollIntervalMs = 200;
+    while (_recognizedText.isEmpty && waitedMs < maxWaitMs) {
+      await Future.delayed(const Duration(milliseconds: pollIntervalMs));
+      waitedMs += pollIntervalMs;
     }
 
     setState(() {
