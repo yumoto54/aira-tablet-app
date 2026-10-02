@@ -108,19 +108,37 @@ class _AiraHomePageState extends State<AiraHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _precacheAvatarImages());
   }
 
+  /// 目の開閉×口の形(8種)をあらかじめ合成した16枚の画像パスを列挙する。
+  ///
+  /// 以前はベース/目/口の3枚をStackで毎フレーム重ねていたが、タブレット上で
+  /// 各レイヤーの境界がわずかにズレて白い縁取りのように見える現象が出たため、
+  /// ビルド時(事前)に全組み合わせを1枚絵として合成しておく方式に変更した。
+  /// こうすると実機側では単純な1枚のImage差し替えだけで済み、
+  /// レイヤー合成のズレが原理的に起こらない。
+  static const List<String> _mouthShapeKeys = [
+    'neutral', 'A', 'E', 'O', 'MPB', 'FV', 'TH', 'L',
+  ];
+
+  /// バックエンドが返す mouthShape コード(neutral/A/E/O/MBP/FV/TH/L)を、
+  /// 合成済みアセットのファイル名に使っているキーに正規化する。
+  ///
+  /// 注意: バックエンドのコードは "MBP" だが、アートワークのファイル名は
+  /// "MPB"(文字の並び順違い)になっているため、ここで吸収している。
+  String _normalizedMouthKey(String mouthShape) {
+    return mouthShape == 'MBP' ? 'MPB' : mouthShape;
+  }
+
+  String _comboAssetPath(bool eyesOpen, String mouthShape) {
+    final eyeKey = eyesOpen ? 'open' : 'closed';
+    final mouthKey = _normalizedMouthKey(mouthShape);
+    return 'assets/avatar/combined/AIRA_combo_${eyeKey}_$mouthKey.png';
+  }
+
   Future<void> _precacheAvatarImages() async {
-    const paths = [
-      'assets/avatar/AIRA_base_neutral.png',
-      'assets/avatar/AIRA_eyes_open.png',
-      'assets/avatar/AIRA_eyes_closed.png',
-      'assets/avatar/AIRA_mouth_neutral.png',
-      'assets/avatar/AIRA_mouth_A.png',
-      'assets/avatar/AIRA_mouth_E.png',
-      'assets/avatar/AIRA_mouth_O.png',
-      'assets/avatar/AIRA_mouth_MPB.png',
-      'assets/avatar/AIRA_mouth_FV.png',
-      'assets/avatar/AIRA_mouth_TH.png',
-      'assets/avatar/AIRA_mouth_L.png',
+    final paths = <String>[
+      for (final eyesOpen in [true, false])
+        for (final mouthShape in _mouthShapeKeys)
+          _comboAssetPath(eyesOpen, mouthShape),
     ];
 
     for (final path in paths) {
@@ -382,33 +400,6 @@ class _AiraHomePageState extends State<AiraHomePage> {
     );
   }
 
-  /// バックエンドが返す mouthShape コード(neutral/A/E/O/MBP/FV/TH/L)を、
-  /// assets/avatar/ 内の静止画ファイル名にマッピングする。
-  ///
-  /// 注意: バックエンドのコードは "MBP" だが、アートワークのファイル名は
-  /// "MPB"(文字の並び順違い)になっているため、ここで吸収している。
-  String _mouthAssetPath(String mouthShape) {
-    switch (mouthShape) {
-      case 'A':
-        return 'assets/avatar/AIRA_mouth_A.png';
-      case 'E':
-        return 'assets/avatar/AIRA_mouth_E.png';
-      case 'O':
-        return 'assets/avatar/AIRA_mouth_O.png';
-      case 'MBP':
-        return 'assets/avatar/AIRA_mouth_MPB.png';
-      case 'FV':
-        return 'assets/avatar/AIRA_mouth_FV.png';
-      case 'TH':
-        return 'assets/avatar/AIRA_mouth_TH.png';
-      case 'L':
-        return 'assets/avatar/AIRA_mouth_L.png';
-      case 'neutral':
-      default:
-        return 'assets/avatar/AIRA_mouth_neutral.png';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -446,37 +437,14 @@ class _AiraHomePageState extends State<AiraHomePage> {
             child: Center(
               child: AspectRatio(
                 aspectRatio: 1,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ベース(体・髪・輪郭)
-                    Image.asset(
-                      'assets/avatar/AIRA_base_neutral.png',
-                      fit: BoxFit.contain,
-                    ),
-                    // 目(通常時はopen、まばたき中だけclosedに差し替え)
-                    // 口と同様にクロスフェードさせる。瞬き自体は速い動きなので
-                    // 持続時間は短め(60ms)にして、もたついた印象にならないようにする。
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 60),
-                      child: Image.asset(
-                        _eyesOpen
-                            ? 'assets/avatar/AIRA_eyes_open.png'
-                            : 'assets/avatar/AIRA_eyes_closed.png',
-                        key: ValueKey(_eyesOpen),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    // 口(audioOffsetMsに沿って差し替わる)
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 100),
-                      child: Image.asset(
-                        _mouthAssetPath(_currentMouthShape),
-                        key: ValueKey(_currentMouthShape),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ],
+                child: AnimatedSwitcher(
+                  // 目・口どちらの切り替えも自然に見えるよう、中間の速さにしておく。
+                  duration: const Duration(milliseconds: 80),
+                  child: Image.asset(
+                    _comboAssetPath(_eyesOpen, _currentMouthShape),
+                    key: ValueKey('${_eyesOpen}_$_currentMouthShape'),
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
