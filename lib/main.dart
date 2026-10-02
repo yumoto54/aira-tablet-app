@@ -224,6 +224,15 @@ class _AiraHomePageState extends State<AiraHomePage> {
   Future<void> _stopRecording() async {
     await _speech.stop();
 
+    // "hello"のような短い発話だと、stop()が返った直後にはまだ
+    // 認識エンジンの最終結果(onResult)が届いていないことがある。
+    // 長い文章では誤差に隠れて気づかなかったが、短い発話では
+    // 結果が空のまま次に進んでしまい、「認識されなかった」ことになっていた。
+    // 少しだけ待って最終結果が反映されるのを待つ。
+    if (_recognizedText.isEmpty) {
+      await Future.delayed(const Duration(milliseconds: 400));
+    }
+
     setState(() {
       _state = AppState.sending;
     });
