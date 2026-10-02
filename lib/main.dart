@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -72,6 +73,7 @@ class _AiraHomePageState extends State<AiraHomePage> {
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final Random _random = Random();
 
   AppState _state = AppState.idle;
   AppLocale _locale = AppLocale.en;
@@ -82,6 +84,10 @@ class _AiraHomePageState extends State<AiraHomePage> {
 
   bool _speechAvailable = false;
   Timer? _mouthCueTimer;
+
+  // まばたき: 一定間隔でランダムに目を閉じる。喋っているかどうかに関わらず動く。
+  bool _eyesOpen = true;
+  Timer? _blinkTimer;
 
   /// 読み上げまで終わった会話の回数
   int _completedTurns = 0;
@@ -95,11 +101,13 @@ class _AiraHomePageState extends State<AiraHomePage> {
   void initState() {
     super.initState();
     _initSpeech();
+    _scheduleNextBlink();
   }
 
   @override
   void dispose() {
     _mouthCueTimer?.cancel();
+    _blinkTimer?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -119,6 +127,20 @@ class _AiraHomePageState extends State<AiraHomePage> {
         _errorMessage = 'Failed to initialize speech: $e';
       });
     }
+  }
+
+  /// 2.5〜5.5秒ごとにランダムな間隔でまばたきさせる。
+  /// 毎回同じ間隔だと機械的に見えるので、少し幅を持たせている。
+  void _scheduleNextBlink() {
+    final delayMs = 2500 + _random.nextInt(3000);
+    _blinkTimer = Timer(Duration(milliseconds: delayMs), () async {
+      if (!mounted) return;
+      setState(() => _eyesOpen = false);
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!mounted) return;
+      setState(() => _eyesOpen = true);
+      _scheduleNextBlink();
+    });
   }
 
   Future<void> _toggleRecording() async {
@@ -228,13 +250,34 @@ class _AiraHomePageState extends State<AiraHomePage> {
           .map((json) => MouthCue.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      await _playAudioWithMouthSync(audioBase64, mouthCues);
+      await _playAudioWithMouthSync(audioBase64, _smoothMouthCues(mouthCues));
     } catch (e) {
       setState(() {
         _state = AppState.idle;
         _errorMessage = 'Error: $e\n\nMake sure the backend is running (npm start in freedom-ramen-avatar-backend)';
       });
     }
+  }
+
+  /// 短すぎる口の形の変化は不自然(パクパクしすぎ)に見えるので間引く。
+  ///
+  /// 直前に採用した cue から minDurationMs 未満のタイミングで来る cue は
+  /// 無視し、ある程度の時間は同じ口の形を保たせる。数値を大きくするほど
+  /// 動きは穏やかに、小さくするほど口の動きは忠実(だが激しく)なる。
+  List<MouthCue> _smoothMouthCues(
+    List<MouthCue> cues, {
+    int minDurationMs = 110,
+  }) {
+    if (cues.isEmpty) return cues;
+
+    final result = <MouthCue>[cues.first];
+    for (final cue in cues.skip(1)) {
+      if (cue.audioOffsetMs - result.last.audioOffsetMs < minDurationMs) {
+        continue;
+      }
+      result.add(cue);
+    }
+    return result;
   }
 
   Future<void> _playAudioWithMouthSync(
@@ -314,26 +357,30 @@ class _AiraHomePageState extends State<AiraHomePage> {
     );
   }
 
-  Color _getMouthColor(String mouthShape) {
+  /// バックエンドが返す mouthShape コード(neutral/A/E/O/MBP/FV/TH/L)を、
+  /// assets/avatar/ 内の静止画ファイル名にマッピングする。
+  ///
+  /// 注意: バックエンドのコードは "MBP" だが、アートワークのファイル名は
+  /// "MPB"(文字の並び順違い)になっているため、ここで吸収している。
+  String _mouthAssetPath(String mouthShape) {
     switch (mouthShape) {
-      case 'neutral':
-        return Colors.grey;
       case 'A':
-        return Colors.red;
+        return 'assets/avatar/AIRA_mouth_A.png';
       case 'E':
-        return Colors.orange;
+        return 'assets/avatar/AIRA_mouth_E.png';
       case 'O':
-        return Colors.yellow;
+        return 'assets/avatar/AIRA_mouth_O.png';
       case 'MBP':
-        return Colors.green;
+        return 'assets/avatar/AIRA_mouth_MPB.png';
       case 'FV':
-        return Colors.blue;
+        return 'assets/avatar/AIRA_mouth_FV.png';
       case 'TH':
-        return Colors.purple;
+        return 'assets/avatar/AIRA_mouth_TH.png';
       case 'L':
-        return Colors.pink;
+        return 'assets/avatar/AIRA_mouth_L.png';
+      case 'neutral':
       default:
-        return Colors.grey;
+        return 'assets/avatar/AIRA_mouth_neutral.png';
     }
   }
 
@@ -372,26 +419,33 @@ class _AiraHomePageState extends State<AiraHomePage> {
         children: [
           Expanded(
             child: Center(
-              child: Container(
-                width: 400,
-                height: 400,
-                color: const Color(0xFFF5F5DC),
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 100),
-                    width: 120,
-                    height: 80,
-                    color: _getMouthColor(_currentMouthShape),
-                    child: Center(
-                      child: Text(
-                        _currentMouthShape,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // ベース(体・髪・輪郭)
+                    Image.asset(
+                      'assets/avatar/AIRA_base_neutral.png',
+                      fit: BoxFit.contain,
+                    ),
+                    // 目(通常時はopen、まばたき中だけclosedに差し替え)
+                    Image.asset(
+                      _eyesOpen
+                          ? 'assets/avatar/AIRA_eyes_open.png'
+                          : 'assets/avatar/AIRA_eyes_closed.png',
+                      fit: BoxFit.contain,
+                    ),
+                    // 口(audioOffsetMsに沿って差し替わる)
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 100),
+                      child: Image.asset(
+                        _mouthAssetPath(_currentMouthShape),
+                        key: ValueKey(_currentMouthShape),
+                        fit: BoxFit.contain,
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
