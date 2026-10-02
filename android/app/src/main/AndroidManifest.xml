@@ -26,9 +26,8 @@
             <!-- このタブレット(Unisoc GPU)で、アバター画像の輪郭に薄い白線が
                  乗って見える現象が確認されたため、新しい描画エンジン
                  Impellerを無効化し、従来のSkiaレンダラーを強制する。
-                 `flutter run --no-enable-impeller` のCLIフラグは実機ビルド
-                 では確実に反映されないことがあるため、マニフェストで
-                 明示的に指定する。 -->
+                 コマンドライン起動時のフラグ指定は実機ビルドでは確実に
+                 反映されないことがあるため、マニフェストで明示的に指定する。 -->
             <meta-data
               android:name="io.flutter.embedding.android.EnableImpeller"
               android:value="false"
