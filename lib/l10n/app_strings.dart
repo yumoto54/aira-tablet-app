@@ -25,6 +25,10 @@ abstract class AppStrings {
   /// 複数用意してローテーションし、単調にならないようにする。
   List<String> get attractMessages;
 
+  /// マイクで聞き取れなかった(無音/認識失敗)ときに、AIRAが声で聞き返す一言。
+  /// 画面上のエラー表示だけだと気づかれにくいため、音声でも案内する。
+  String get voiceRetryPrompt;
+
   // --- ウィザード共通 ---
 
   String get surveyTitle;
@@ -115,6 +119,9 @@ class _JaStrings extends AppStrings {
         'おいしいラーメンの話、聞いていきませんか？マイクのボタンを押して話しかけてくださいね。',
         'アンケートに答えるだけで、プレゼントがもらえちゃいます！ぜひ参加してくださいね。',
       ];
+
+  @override
+  String get voiceRetryPrompt => 'ごめんなさい、うまく聞き取れませんでした。もう一度、ゆっくりお話しいただけますか？';
 
   @override
   String get surveyTitle => 'アンケート';
@@ -254,6 +261,10 @@ class _EnStrings extends AppStrings {
         'Curious about our ramen? Press the mic button and I will tell you all about it.',
         'Just answer a quick survey and get a free giveaway! Come give it a try.',
       ];
+
+  @override
+  String get voiceRetryPrompt =>
+      "Sorry, I didn't catch that. Could you try again, a little more slowly?";
 
   @override
   String get surveyTitle => 'Survey';

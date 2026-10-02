@@ -220,12 +220,39 @@ class _AiraHomePageState extends State<AiraHomePage> {
     final message =
         _strings.attractMessages[_random.nextInt(_strings.attractMessages.length)];
 
+    _isAttractSpeech = true;
+    final spoke = await _speakText(
+      message,
+      // API応答を待っている間にユーザーが話しかけ始めていたら、
+      // 今さら呼び込みを再生してユーザーの発話に被せない。
+      shouldContinue: () => mounted && _state == AppState.idle,
+    );
+    if (!spoke) {
+      // 発話自体に失敗した場合(バックエンド未起動など)は、会話機能には
+      // 影響させず、次の呼び込みタイミングだけ再設定しておく。
+      _isAttractSpeech = false;
+      if (mounted && _state == AppState.idle) {
+        _scheduleAttractTimer();
+      }
+    }
+  }
+
+  /// 指定したテキストをバックエンドのTTSで読み上げ、口の動きを同期させる。
+  /// アトラクトモードの呼び込みや、聞き取れなかったときの聞き返しなど、
+  /// 「ユーザーの発話への通常の返答」以外の場面でAIRAに話させたいときに使う。
+  ///
+  /// 成功して再生まで進んだ場合は true、API呼び出し等で失敗した場合は false を返す。
+  /// 失敗時の状態の後始末(タイマーの再設定など)は呼び出し側の責務とする。
+  Future<bool> _speakText(
+    String text, {
+    bool Function()? shouldContinue,
+  }) async {
     try {
       final speakResponse = await http.post(
         Uri.parse('$kApiBaseUrl/api/speak'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'text': message,
+          'text': text,
           'locale': _locale.tag,
         }),
       );
@@ -234,7 +261,8 @@ class _AiraHomePageState extends State<AiraHomePage> {
         throw Exception('Speak API failed: ${speakResponse.statusCode}');
       }
 
-      if (!mounted || _state != AppState.idle) return;
+      if (!mounted) return false;
+      if (shouldContinue != null && !shouldContinue()) return false;
 
       final speakData = jsonDecode(speakResponse.body);
       final audioBase64 = speakData['audioBase64'] as String;
@@ -244,16 +272,13 @@ class _AiraHomePageState extends State<AiraHomePage> {
           .toList();
 
       setState(() {
-        _airaReplyText = message;
+        _airaReplyText = text;
       });
 
-      _isAttractSpeech = true;
       await _playAudioWithMouthSync(audioBase64, _smoothMouthCues(mouthCues));
+      return true;
     } catch (_) {
-      // バックエンド未起動など。会話機能には影響させず、次の呼び込みだけ再設定する。
-      if (mounted && _state == AppState.idle) {
-        _scheduleAttractTimer();
-      }
+      return false;
     }
   }
 
@@ -321,10 +346,18 @@ class _AiraHomePageState extends State<AiraHomePage> {
 
     if (_recognizedText.isEmpty) {
       setState(() {
-        _state = AppState.idle;
         _errorMessage = 'No speech recognized';
       });
-      _scheduleAttractTimer();
+      // 画面表示だけだと気づかれにくいので、AIRA自身の声でも聞き返す。
+      // 発話に失敗した場合(バックエンド未起動など)は、ここで直接
+      // アイドルに戻して次の呼び込みタイマーを仕掛け直す。
+      final spoke = await _speakText(_strings.voiceRetryPrompt);
+      if (!spoke && mounted) {
+        setState(() {
+          _state = AppState.idle;
+        });
+        _scheduleAttractTimer();
+      }
       return;
     }
 
