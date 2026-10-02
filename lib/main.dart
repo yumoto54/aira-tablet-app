@@ -102,6 +102,31 @@ class _AiraHomePageState extends State<AiraHomePage> {
     super.initState();
     _initSpeech();
     _scheduleNextBlink();
+    // 会話中に口の形が切り替わるたびに初回デコードが走ると、そこだけ
+    // カクつく(特に非力な端末では顕著)。起動時に全アバター画像を
+    // 一度デコードしてキャッシュしておくことで、本番中のジャンクを避ける。
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheAvatarImages());
+  }
+
+  Future<void> _precacheAvatarImages() async {
+    const paths = [
+      'assets/avatar/AIRA_base_neutral.png',
+      'assets/avatar/AIRA_eyes_open.png',
+      'assets/avatar/AIRA_eyes_closed.png',
+      'assets/avatar/AIRA_mouth_neutral.png',
+      'assets/avatar/AIRA_mouth_A.png',
+      'assets/avatar/AIRA_mouth_E.png',
+      'assets/avatar/AIRA_mouth_O.png',
+      'assets/avatar/AIRA_mouth_MPB.png',
+      'assets/avatar/AIRA_mouth_FV.png',
+      'assets/avatar/AIRA_mouth_TH.png',
+      'assets/avatar/AIRA_mouth_L.png',
+    ];
+
+    for (final path in paths) {
+      if (!mounted) return;
+      await precacheImage(AssetImage(path), context);
+    }
   }
 
   @override
@@ -430,11 +455,17 @@ class _AiraHomePageState extends State<AiraHomePage> {
                       fit: BoxFit.contain,
                     ),
                     // 目(通常時はopen、まばたき中だけclosedに差し替え)
-                    Image.asset(
-                      _eyesOpen
-                          ? 'assets/avatar/AIRA_eyes_open.png'
-                          : 'assets/avatar/AIRA_eyes_closed.png',
-                      fit: BoxFit.contain,
+                    // 口と同様にクロスフェードさせる。瞬き自体は速い動きなので
+                    // 持続時間は短め(60ms)にして、もたついた印象にならないようにする。
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 60),
+                      child: Image.asset(
+                        _eyesOpen
+                            ? 'assets/avatar/AIRA_eyes_open.png'
+                            : 'assets/avatar/AIRA_eyes_closed.png',
+                        key: ValueKey(_eyesOpen),
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     // 口(audioOffsetMsに沿って差し替わる)
                     AnimatedSwitcher(
