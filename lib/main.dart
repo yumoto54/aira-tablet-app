@@ -95,6 +95,20 @@ class _AiraHomePageState extends State<AiraHomePage> {
   /// アンケートの口頭案内を流したかどうか。1セッションに1回だけにする。
   bool _surveyInviteSpoken = false;
 
+  // --- アトラクトモード: 誰も話しかけていない時間が一定続いたら、
+  // AIRA側から自分で声をかけてブース前を通る人を呼び込む ---
+
+  /// アイドル(誰も操作していない)状態がこの時間続いたら呼び込みを話す。
+  static const Duration _attractIdleDelay = Duration(seconds: 35);
+
+  Timer? _attractTimer;
+
+  /// 今再生している発話が、ユーザーとの会話(通常ターン)ではなく
+  /// アトラクトモードの呼び込みかどうか。会話ターン数のカウントや
+  /// アンケート導線の挿入はユーザーとの実際の会話にだけ適用したいので、
+  /// それらと区別するために使う。
+  bool _isAttractSpeech = false;
+
   AppStrings get _strings => AppStrings.of(_locale);
 
   @override
@@ -102,6 +116,7 @@ class _AiraHomePageState extends State<AiraHomePage> {
     super.initState();
     _initSpeech();
     _scheduleNextBlink();
+    _scheduleAttractTimer();
     // 会話中に口の形が切り替わるたびに初回デコードが走ると、そこだけ
     // カクつく(特に非力な端末では顕著)。起動時に全アバター画像を
     // 一度デコードしてキャッシュしておくことで、本番中のジャンクを避ける。
@@ -151,6 +166,7 @@ class _AiraHomePageState extends State<AiraHomePage> {
   void dispose() {
     _mouthCueTimer?.cancel();
     _blinkTimer?.cancel();
+    _attractTimer?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -186,6 +202,61 @@ class _AiraHomePageState extends State<AiraHomePage> {
     });
   }
 
+  /// アイドル状態が _attractIdleDelay 続いたら _playAttractMessage() を呼ぶ
+  /// タイマーを(再)設定する。ユーザーが話しかけ始めたり、画面遷移したりする
+  /// たびに呼び直して、タイマーをリセットする。
+  void _scheduleAttractTimer() {
+    _attractTimer?.cancel();
+    _attractTimer = Timer(_attractIdleDelay, _playAttractMessage);
+  }
+
+  /// 誰も話しかけていない状態が続いたときに、AIRAから自分で声をかけて
+  /// ブース前を通る人を呼び込む。通常の会話ターンとは独立した仕組みなので、
+  /// 失敗しても画面にエラーを出さず、静かに諦めて次のタイマーだけ再設定する
+  /// (バックエンドが一時的に落ちていても、通常の会話機能には影響させない)。
+  Future<void> _playAttractMessage() async {
+    if (!mounted || _state != AppState.idle) return;
+
+    final message =
+        _strings.attractMessages[_random.nextInt(_strings.attractMessages.length)];
+
+    try {
+      final speakResponse = await http.post(
+        Uri.parse('$kApiBaseUrl/api/speak'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'text': message,
+          'locale': _locale.tag,
+        }),
+      );
+
+      if (speakResponse.statusCode != 200) {
+        throw Exception('Speak API failed: ${speakResponse.statusCode}');
+      }
+
+      if (!mounted || _state != AppState.idle) return;
+
+      final speakData = jsonDecode(speakResponse.body);
+      final audioBase64 = speakData['audioBase64'] as String;
+      final mouthCuesJson = speakData['mouthCues'] as List;
+      final mouthCues = mouthCuesJson
+          .map((json) => MouthCue.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      setState(() {
+        _airaReplyText = message;
+      });
+
+      _isAttractSpeech = true;
+      await _playAudioWithMouthSync(audioBase64, _smoothMouthCues(mouthCues));
+    } catch (_) {
+      // バックエンド未起動など。会話機能には影響させず、次の呼び込みだけ再設定する。
+      if (mounted && _state == AppState.idle) {
+        _scheduleAttractTimer();
+      }
+    }
+  }
+
   Future<void> _toggleRecording() async {
     if (_state == AppState.recording) {
       await _stopRecording();
@@ -201,6 +272,11 @@ class _AiraHomePageState extends State<AiraHomePage> {
       });
       return;
     }
+
+    // ユーザーが自分から話しかけ始めたので、呼び込み発話が割り込まないように
+    // アトラクトモードのタイマーを止めておく。会話が終わってアイドルに
+    // 戻ったタイミングで改めて仕掛け直す。
+    _attractTimer?.cancel();
 
     setState(() {
       _state = AppState.recording;
@@ -248,6 +324,7 @@ class _AiraHomePageState extends State<AiraHomePage> {
         _state = AppState.idle;
         _errorMessage = 'No speech recognized';
       });
+      _scheduleAttractTimer();
       return;
     }
 
@@ -314,6 +391,7 @@ class _AiraHomePageState extends State<AiraHomePage> {
         _state = AppState.idle;
         _errorMessage = 'Error: $e\n\nMake sure the backend is running (npm start in freedom-ramen-avatar-backend)';
       });
+      _scheduleAttractTimer();
     }
   }
 
@@ -376,9 +454,14 @@ class _AiraHomePageState extends State<AiraHomePage> {
             setState(() {
               _state = AppState.idle;
               _currentMouthShape = 'neutral';
-              // 読み上げ終了をもって1ターン成立とみなす
-              _completedTurns++;
+              // アトラクトモードの自主発話はユーザーとの会話ターンではないので、
+              // アンケート誘導のカウントには含めない。
+              if (!_isAttractSpeech) {
+                _completedTurns++;
+              }
             });
+            _isAttractSpeech = false;
+            _scheduleAttractTimer();
           }
         },
       );
@@ -389,6 +472,8 @@ class _AiraHomePageState extends State<AiraHomePage> {
         _state = AppState.idle;
         _errorMessage = 'Audio playback error: $e';
       });
+      _isAttractSpeech = false;
+      _scheduleAttractTimer();
     }
   }
 
@@ -400,6 +485,9 @@ class _AiraHomePageState extends State<AiraHomePage> {
     if (_speech.isListening) {
       await _speech.cancel();
     }
+    // アンケート画面にいる間にAIRAが勝手に喋り出さないように止めておく。
+    _attractTimer?.cancel();
+    _isAttractSpeech = false;
 
     if (!mounted) return;
 
@@ -413,6 +501,11 @@ class _AiraHomePageState extends State<AiraHomePage> {
         builder: (_) => SurveyFlowPage(locale: _locale),
       ),
     );
+
+    // アンケート画面から戻ってきたら、再びアイドル検知を始める。
+    if (mounted) {
+      _scheduleAttractTimer();
+    }
   }
 
   @override

@@ -20,6 +20,11 @@ abstract class AppStrings {
   /// 3ターン目の会話が終わったあと、次の返答の末尾に足して読み上げる一文
   String get surveyInvitation;
 
+  /// アイドル(誰も話しかけていない)状態がしばらく続いたときに、AIRAが
+  /// 自分から発話して呼び込む「アトラクトモード」のセリフ。
+  /// 複数用意してローテーションし、単調にならないようにする。
+  List<String> get attractMessages;
+
   // --- ウィザード共通 ---
 
   String get surveyTitle;
@@ -102,6 +107,14 @@ class _JaStrings extends AppStrings {
 
   @override
   String get surveyInvitation => 'ところで、アンケートに答えると景品がもらえますよ。';
+
+  @override
+  List<String> get attractMessages => const [
+        'こんにちは！フリーダムラーメンのアイラです。マイクを押して、気になることを何でも聞いてくださいね。',
+        'ちょっと気になった方、こんにちは！アンケートに答えるとプレゼントがもらえますよ。',
+        'おいしいラーメンの話、聞いていきませんか？マイクのボタンを押して話しかけてくださいね。',
+        'アンケートに答えるだけで、プレゼントがもらえちゃいます！ぜひ参加してくださいね。',
+      ];
 
   @override
   String get surveyTitle => 'アンケート';
@@ -233,6 +246,14 @@ class _EnStrings extends AppStrings {
   @override
   String get surveyInvitation =>
       'By the way, if you answer a short survey, you can get a free gift.';
+
+  @override
+  List<String> get attractMessages => const [
+        "Hi there! I'm AIRA from Freedom Ramen. Press the microphone button and ask me anything!",
+        'Come say hello! Answer a quick survey and get a free gift.',
+        'Curious about our ramen? Press the mic button and I will tell you all about it.',
+        'Just answer a quick survey and get a free giveaway! Come give it a try.',
+      ];
 
   @override
   String get surveyTitle => 'Survey';
