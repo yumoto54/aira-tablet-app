@@ -67,7 +67,8 @@ class AiraHomePage extends StatefulWidget {
   State<AiraHomePage> createState() => _AiraHomePageState();
 }
 
-class _AiraHomePageState extends State<AiraHomePage> {
+class _AiraHomePageState extends State<AiraHomePage>
+    with SingleTickerProviderStateMixin {
   /// 何回会話が成立したらアンケートに口頭で誘うか
   static const int _turnsBeforeSurveyInvite = 3;
 
@@ -84,6 +85,11 @@ class _AiraHomePageState extends State<AiraHomePage> {
 
   bool _speechAvailable = false;
   Timer? _mouthCueTimer;
+
+  /// マイクボタンの「聞いています」リングを脈打たせるためのアニメーション。
+  /// 録音中かどうかに関わらず回し続け、表示側(AnimatedBuilder)で
+  /// 録音中だけリングを見せる。開始/停止の分岐を持たない分、単純にしている。
+  late final AnimationController _pulseController;
 
   // まばたき: 一定間隔でランダムに目を閉じる。喋っているかどうかに関わらず動く。
   bool _eyesOpen = true;
@@ -114,6 +120,10 @@ class _AiraHomePageState extends State<AiraHomePage> {
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
     _initSpeech();
     _scheduleNextBlink();
     _scheduleAttractTimer();
@@ -167,6 +177,7 @@ class _AiraHomePageState extends State<AiraHomePage> {
     _mouthCueTimer?.cancel();
     _blinkTimer?.cancel();
     _attractTimer?.cancel();
+    _pulseController.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -541,6 +552,156 @@ class _AiraHomePageState extends State<AiraHomePage> {
     }
   }
 
+  /// 状態ごとのアイコン・ラベル・色。見た瞬間に「いまどの段階か」が
+  /// わかるように、マイクボタンと状態バッジの両方でこの3点セットを使う。
+  (IconData, String, Color) _statusVisual(AppState state) {
+    return switch (state) {
+      AppState.idle => (Icons.mic_none, _strings.mainStatusIdle, Colors.blueGrey),
+      AppState.recording => (Icons.graphic_eq, _strings.mainStatusListening, Colors.red),
+      AppState.sending => (Icons.hourglass_top, _strings.mainStatusSending, Colors.orange),
+      AppState.speaking => (Icons.volume_up, _strings.mainStatusSpeaking, Colors.green),
+    };
+  }
+
+  Widget _buildStatusBadge() {
+    final (icon, label, color) = _statusVisual(_state);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTranscriptBubble({
+    required IconData icon,
+    required String text,
+    required bool alignRight,
+  }) {
+    final bubble = Container(
+      constraints: const BoxConstraints(maxWidth: 520),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: alignRight ? Colors.blue[50] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: Colors.black54),
+          const SizedBox(width: 8),
+          Flexible(child: Text(text)),
+        ],
+      ),
+    );
+    return Row(
+      mainAxisAlignment:
+          alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [bubble],
+    );
+  }
+
+  /// マイクボタン本体。「押す→聞いている(赤く脈打つ)→送信中(スピナー)→
+  /// AIRAが話す(緑)」が一目でわかるよう、状態ごとに見た目をはっきり変える。
+  Widget _buildMicButton() {
+    final (_, label, color) = _statusVisual(_state);
+    final tappable = _state == AppState.idle || _state == AppState.recording;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 160,
+          height: 160,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 録音中だけ、ボタンの外周に脈打つリングを表示して
+              // 「いま聞き取っている」ことを強調する。
+              if (_state == AppState.recording)
+                AnimatedBuilder(
+                  animation: _pulseController,
+                  builder: (context, child) {
+                    final scale = 1.0 + (_pulseController.value * 0.35);
+                    final opacity = 1.0 - _pulseController.value;
+                    return Transform.scale(
+                      scale: scale,
+                      child: Opacity(
+                        opacity: opacity.clamp(0.0, 1.0),
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: FloatingActionButton(
+                  onPressed: tappable ? _toggleRecording : null,
+                  backgroundColor: color,
+                  child: _state == AppState.sending
+                      ? const SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : Icon(
+                          _state == AppState.recording
+                              ? Icons.stop
+                              : _state == AppState.speaking
+                                  ? Icons.volume_up
+                                  : Icons.mic,
+                          size: 48,
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _state == AppState.recording ? _strings.voiceStop : label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -600,22 +761,33 @@ class _AiraHomePageState extends State<AiraHomePage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'State: ${_state.name}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text('Recognized: $_recognizedText'),
-                const SizedBox(height: 8),
-                Text('AIRA Reply: $_airaReplyText'),
-                const SizedBox(height: 8),
+                Center(child: _buildStatusBadge()),
+                if (_recognizedText.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildTranscriptBubble(
+                    icon: Icons.person,
+                    text: _recognizedText,
+                    alignRight: true,
+                  ),
+                ],
+                if (_airaReplyText.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildTranscriptBubble(
+                    icon: Icons.smart_toy,
+                    text: _airaReplyText,
+                    alignRight: false,
+                  ),
+                ],
                 if (_errorMessage.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.red[100],
-                    child: Text(
-                      _errorMessage,
-                      style: const TextStyle(color: Colors.red),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.red[100],
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
                   ),
               ],
@@ -623,21 +795,7 @@ class _AiraHomePageState extends State<AiraHomePage> {
           ),
           Padding(
             padding: const EdgeInsets.all(32),
-            child: SizedBox(
-              width: 120,
-              height: 120,
-              child: FloatingActionButton(
-                onPressed: _state == AppState.idle || _state == AppState.recording
-                    ? _toggleRecording
-                    : null,
-                backgroundColor:
-                    _state == AppState.recording ? Colors.red : Colors.blue,
-                child: Icon(
-                  _state == AppState.recording ? Icons.stop : Icons.mic,
-                  size: 48,
-                ),
-              ),
-            ),
+            child: _buildMicButton(),
           ),
         ],
       ),

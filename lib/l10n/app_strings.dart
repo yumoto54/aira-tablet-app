@@ -29,6 +29,22 @@ abstract class AppStrings {
   /// 画面上のエラー表示だけだと気づかれにくいため、音声でも案内する。
   String get voiceRetryPrompt;
 
+  // --- メイン画面の状態表示 ---
+  // マイクを「押す→聞いている→送信→AIRAが話す」の流れが一目でわかるように、
+  // AppStateごとに短いラベルを出す。
+
+  /// 何も操作していない(押せる)状態
+  String get mainStatusIdle;
+
+  /// マイクが音声を聞き取っている状態
+  String get mainStatusListening;
+
+  /// 聞き取り終了〜AIRAの返答が届くまで(サーバーに送信中)
+  String get mainStatusSending;
+
+  /// AIRAが声で返答している状態
+  String get mainStatusSpeaking;
+
   // --- ウィザード共通 ---
 
   String get surveyTitle;
@@ -122,6 +138,18 @@ class _JaStrings extends AppStrings {
 
   @override
   String get voiceRetryPrompt => 'ごめんなさい、うまく聞き取れませんでした。もう一度、ゆっくりお話しいただけますか？';
+
+  @override
+  String get mainStatusIdle => 'マイクのボタンを押して、話しかけてください';
+
+  @override
+  String get mainStatusListening => '聞いています…話し終わったらボタンをもう一度押してください';
+
+  @override
+  String get mainStatusSending => '送信しました。AIRAが考えています…';
+
+  @override
+  String get mainStatusSpeaking => 'AIRAが話しています';
 
   @override
   String get surveyTitle => 'アンケート';
@@ -265,6 +293,19 @@ class _EnStrings extends AppStrings {
   @override
   String get voiceRetryPrompt =>
       "Sorry, I didn't catch that. Could you try again, a little more slowly?";
+
+  @override
+  String get mainStatusIdle => 'Press the microphone button to start talking';
+
+  @override
+  String get mainStatusListening =>
+      "Listening… press the button again when you're done";
+
+  @override
+  String get mainStatusSending => 'Sent! AIRA is thinking…';
+
+  @override
+  String get mainStatusSpeaking => 'AIRA is speaking';
 
   @override
   String get surveyTitle => 'Survey';
