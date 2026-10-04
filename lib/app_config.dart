@@ -1,5 +1,12 @@
 /// バックエンド(freedom-ramen-avatar-backend)のベースURL。
 ///
-/// タブレット実機からは localhost に届かない。開発PCのLAN IPを書く。
-/// PCのIPが変わったらここも合わせる(ipconfig の IPv4)。
-const String kApiBaseUrl = 'http://192.168.0.102:7071';
+/// Azure Functions (freedom-ramen-aira-backend) にデプロイ済みのものを指す。
+/// 会場PCの有無に関係なく動くよう、ローカルPCのLAN IPではなくこのURLを使う。
+const String kApiBaseUrl =
+    'https://freedom-ramen-aira-backend-dvhgffckgfffebes.westus3-01.azurewebsites.net';
+
+// kApiFunctionKey (Azure Functionsの認証キー) は秘密情報なので、
+// gitには含めない api_secrets.dart の方に書く。
+// このファイルを初めて開く人は api_secrets.example.dart をコピーして
+// api_secrets.dart を作り、実際のキーを入れてください(READMEにも記載)。
+export 'api_secrets.dart';

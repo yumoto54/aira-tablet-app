@@ -42,7 +42,10 @@ Future<SurveySubmitResult> submitSurvey({
   try {
     final response = await httpClient.post(
       Uri.parse('$kApiBaseUrl/api/survey'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-functions-key': kApiFunctionKey,
+      },
       body: jsonEncode(draft.toRequestBody(locale)),
     );
 

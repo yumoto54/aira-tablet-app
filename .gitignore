@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Azure Functionsキーなどの秘密情報(api_secrets.example.dartがテンプレート)
+lib/api_secrets.dart

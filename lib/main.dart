@@ -289,7 +289,10 @@ class _AiraHomePageState extends State<AiraHomePage>
       final speakResponse = await http
           .post(
             Uri.parse('$kApiBaseUrl/api/speak'),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'x-functions-key': kApiFunctionKey,
+            },
             body: jsonEncode({
               'text': text,
               'locale': _locale.tag,
@@ -453,7 +456,10 @@ class _AiraHomePageState extends State<AiraHomePage>
       final chatResponse = await http
           .post(
             Uri.parse('$kApiBaseUrl/api/chat'),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'x-functions-key': kApiFunctionKey,
+            },
             body: jsonEncode({
               'utterance': _recognizedText,
               'locale': _locale.tag,
@@ -476,7 +482,10 @@ class _AiraHomePageState extends State<AiraHomePage>
       final speakResponse = await http
           .post(
             Uri.parse('$kApiBaseUrl/api/speak'),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'x-functions-key': kApiFunctionKey,
+            },
             body: jsonEncode({
               'text': spokenText,
               'locale': _locale.tag,
