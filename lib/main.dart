@@ -361,8 +361,11 @@ class _AiraHomePageState extends State<AiraHomePage>
         localeId: _locale.sttLocaleId,
         // 無音が続いたらこちらから切る。指定しないと Android 側の
         // タイムアウト(十秒前後)まで赤いマイクのまま待たされる。
-        pauseFor: const Duration(seconds: 2),
-        listenFor: const Duration(seconds: 8),
+        // ただし2秒だと「押してから話し始めるまでの間」にも引っかかり、
+        // 何もしゃべっていないのに即座に「聞き取れませんでした」になって
+        // しまっていたため、話し始めの間も見込んで余裕を持たせる。
+        pauseFor: const Duration(seconds: 5),
+        listenFor: const Duration(seconds: 12),
         cancelOnError: true,
       ),
     );
