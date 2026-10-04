@@ -115,6 +115,14 @@ class _AiraHomePageState extends State<AiraHomePage>
   /// それらと区別するために使う。
   bool _isAttractSpeech = false;
 
+  /// 聞き取りの終了処理が二重に走らないようにする。
+  /// stop のタップと、認識エンジン側のタイムアウト/エラーがほぼ同時に来るため。
+  bool _finishingListen = false;
+
+  /// 今の聞き取りセッションで、エンジンが実際に listening になったか。
+  /// 前回セッションの遅延した done 通知で、聞き始め直後に閉じてしまわないようにする。
+  bool _heardListeningStatus = false;
+
   AppStrings get _strings => AppStrings.of(_locale);
 
   @override
@@ -186,9 +194,27 @@ class _AiraHomePageState extends State<AiraHomePage>
     try {
       _speechAvailable = await _speech.initialize(
         onError: (error) {
+          // error_no_match / error_speech_timeout は「何も聞き取れなかった」とき。
+          // ここで終わらせないと、赤いマイクのまま十数秒固まったように見える。
+          if (_state == AppState.recording) {
+            unawaited(_finishListen(userStopped: false));
+            return;
+          }
           setState(() {
             _errorMessage = 'Speech error: ${error.errorMsg}';
           });
+        },
+        onStatus: (status) {
+          if (status == stt.SpeechToText.listeningStatus) {
+            _heardListeningStatus = true;
+            return;
+          }
+          if (_state != AppState.recording || _finishingListen) return;
+          if (!_heardListeningStatus) return;
+          if (status == stt.SpeechToText.notListeningStatus ||
+              status == stt.SpeechToText.doneStatus) {
+            unawaited(_finishListen(userStopped: false));
+          }
         },
       );
       setState(() {});
@@ -257,16 +283,19 @@ class _AiraHomePageState extends State<AiraHomePage>
   Future<bool> _speakText(
     String text, {
     bool Function()? shouldContinue,
+    Duration timeout = const Duration(seconds: 8),
   }) async {
     try {
-      final speakResponse = await http.post(
-        Uri.parse('$kApiBaseUrl/api/speak'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'text': text,
-          'locale': _locale.tag,
-        }),
-      );
+      final speakResponse = await http
+          .post(
+            Uri.parse('$kApiBaseUrl/api/speak'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'text': text,
+              'locale': _locale.tag,
+            }),
+          )
+          .timeout(timeout);
 
       if (speakResponse.statusCode != 200) {
         throw Exception('Speak API failed: ${speakResponse.statusCode}');
@@ -295,7 +324,7 @@ class _AiraHomePageState extends State<AiraHomePage>
 
   Future<void> _toggleRecording() async {
     if (_state == AppState.recording) {
-      await _stopRecording();
+      await _finishListen(userStopped: true);
     } else if (_state == AppState.idle) {
       await _startRecording();
     }
@@ -319,6 +348,7 @@ class _AiraHomePageState extends State<AiraHomePage>
       _recognizedText = '';
       _airaReplyText = '';
       _errorMessage = '';
+      _heardListeningStatus = false;
     });
 
     await _speech.listen(
@@ -329,50 +359,79 @@ class _AiraHomePageState extends State<AiraHomePage>
       },
       listenOptions: stt.SpeechListenOptions(
         localeId: _locale.sttLocaleId,
+        // 無音が続いたらこちらから切る。指定しないと Android 側の
+        // タイムアウト(十秒前後)まで赤いマイクのまま待たされる。
+        pauseFor: const Duration(seconds: 2),
+        listenFor: const Duration(seconds: 8),
+        cancelOnError: true,
       ),
     );
   }
 
-  Future<void> _stopRecording() async {
-    await _speech.stop();
+  /// 聞き取りを終えて、結果があれば会話へ、なければすぐマイクを戻す。
+  Future<void> _finishListen({required bool userStopped}) async {
+    if (_finishingListen || _state != AppState.recording) return;
+    _finishingListen = true;
 
-    // "hello"のような短い発話だと、stop()が返った直後にはまだ
-    // 認識エンジンの最終結果(onResult)が届いていないことがある。
-    // 長い文章では誤差に隠れて気づかなかったが、短い発話では
-    // 結果が空のまま次に進んでしまい、「認識されなかった」ことになっていた。
-    // 400msでは"how are you"(3単語)は直ったが"hi"/"hello"(1単語)には
-    // 足りなかったため、200ms刻みで最大1200msまで粘り強く待つ。
-    // (届いた時点ですぐ抜けるので、通常ケースへの遅延影響はない)
-    var waitedMs = 0;
-    const maxWaitMs = 1200;
-    const pollIntervalMs = 200;
-    while (_recognizedText.isEmpty && waitedMs < maxWaitMs) {
-      await Future.delayed(const Duration(milliseconds: pollIntervalMs));
-      waitedMs += pollIntervalMs;
+    try {
+      if (_speech.isListening) {
+        try {
+          // ユーザーが止めた直後は "hi" のような短い語の最終結果が遅れがちなので
+          // stop で確定を待つ。エンジン側がタイムアウトした空振りは cancel で切る。
+          if (userStopped || _recognizedText.isNotEmpty) {
+            await _speech.stop().timeout(const Duration(seconds: 2));
+          } else {
+            await _speech.cancel().timeout(const Duration(seconds: 1));
+          }
+        } on TimeoutException {
+          unawaited(_speech.cancel());
+        }
+      }
+
+      // ユーザーが止めた直後は、短い発話の最終結果が遅れて届くことがある。
+      // エンジン側のタイムアウトで終わった場合は、待っても空のままなので粘らない。
+      if (userStopped && _recognizedText.isEmpty) {
+        var waitedMs = 0;
+        const maxWaitMs = 600;
+        const pollIntervalMs = 150;
+        while (_recognizedText.isEmpty && waitedMs < maxWaitMs) {
+          await Future.delayed(const Duration(milliseconds: pollIntervalMs));
+          waitedMs += pollIntervalMs;
+        }
+      }
+
+      if (!mounted) return;
+
+      if (_recognizedText.isEmpty) {
+        await _handleUnrecognizedSpeech();
+        return;
+      }
+
+      setState(() {
+        _state = AppState.sending;
+      });
+      await _sendToBackend();
+    } finally {
+      _finishingListen = false;
     }
+  }
 
+  /// 聞き取れなかったときは、先にマイクを使える状態に戻してから聞き返す。
+  /// 聞き返しのTTSを待っている間に画面が固まったように見えないようにするため。
+  Future<void> _handleUnrecognizedSpeech() async {
     setState(() {
-      _state = AppState.sending;
+      _state = AppState.idle;
+      _errorMessage = 'No speech recognized';
     });
 
-    if (_recognizedText.isEmpty) {
-      setState(() {
-        _errorMessage = 'No speech recognized';
-      });
-      // 画面表示だけだと気づかれにくいので、AIRA自身の声でも聞き返す。
-      // 発話に失敗した場合(バックエンド未起動など)は、ここで直接
-      // アイドルに戻して次の呼び込みタイマーを仕掛け直す。
-      final spoke = await _speakText(_strings.voiceRetryPrompt);
-      if (!spoke && mounted) {
-        setState(() {
-          _state = AppState.idle;
-        });
-        _scheduleAttractTimer();
-      }
-      return;
+    final spoke = await _speakText(
+      _strings.voiceRetryPrompt,
+      timeout: const Duration(seconds: 3),
+      shouldContinue: () => mounted && _state == AppState.idle,
+    );
+    if (!spoke && mounted && _state == AppState.idle) {
+      _scheduleAttractTimer();
     }
-
-    await _sendToBackend();
   }
 
   /// 3回会話が成立したあと、次の返答の末尾にアンケートの案内を足す。
@@ -388,14 +447,16 @@ class _AiraHomePageState extends State<AiraHomePage>
 
   Future<void> _sendToBackend() async {
     try {
-      final chatResponse = await http.post(
-        Uri.parse('$kApiBaseUrl/api/chat'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'utterance': _recognizedText,
-          'locale': _locale.tag,
-        }),
-      );
+      final chatResponse = await http
+          .post(
+            Uri.parse('$kApiBaseUrl/api/chat'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'utterance': _recognizedText,
+              'locale': _locale.tag,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (chatResponse.statusCode != 200) {
         throw Exception('Chat API failed: ${chatResponse.statusCode}');
@@ -409,14 +470,16 @@ class _AiraHomePageState extends State<AiraHomePage>
         _airaReplyText = spokenText;
       });
 
-      final speakResponse = await http.post(
-        Uri.parse('$kApiBaseUrl/api/speak'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'text': spokenText,
-          'locale': _locale.tag,
-        }),
-      );
+      final speakResponse = await http
+          .post(
+            Uri.parse('$kApiBaseUrl/api/speak'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'text': spokenText,
+              'locale': _locale.tag,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (speakResponse.statusCode != 200) {
         throw Exception('Speak API failed: ${speakResponse.statusCode}');
