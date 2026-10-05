@@ -99,6 +99,16 @@ class _AiraHomePageState extends State<AiraHomePage>
   /// 読み上げまで終わった会話の回数
   int _completedTurns = 0;
 
+  /// 直近の会話。「はい」「それお願いします」のような短い返事を、AIが
+  /// 直前のやりとりと結びつけて理解できるように、バックエンドへ一緒に送る。
+  final List<Map<String, String>> _chatHistory = [];
+  DateTime? _lastChatAt;
+
+  /// この時間しゃべりかけられなかったら、次の来場者とみなして履歴を捨てる。
+  /// 前の人との会話の続きとして答えてしまわないため。
+  static const Duration _chatHistoryTimeout = Duration(seconds: 90);
+  static const int _maxChatHistoryMessages = 6;
+
   /// アンケートの口頭案内を流したかどうか。1セッションに1回だけにする。
   bool _surveyInviteSpoken = false;
 
@@ -461,6 +471,13 @@ class _AiraHomePageState extends State<AiraHomePage>
 
   Future<void> _sendToBackend() async {
     try {
+      final utterance = _recognizedText;
+      final startedAt = DateTime.now();
+      if (_lastChatAt == null ||
+          startedAt.difference(_lastChatAt!) > _chatHistoryTimeout) {
+        _chatHistory.clear();
+      }
+
       final chatResponse = await http
           .post(
             Uri.parse('$kApiBaseUrl/api/chat'),
@@ -469,8 +486,9 @@ class _AiraHomePageState extends State<AiraHomePage>
               'x-functions-key': kApiFunctionKey,
             },
             body: jsonEncode({
-              'utterance': _recognizedText,
+              'utterance': utterance,
               'locale': _locale.tag,
+              'history': _chatHistory,
             }),
           )
           .timeout(const Duration(seconds: 8));
@@ -481,6 +499,14 @@ class _AiraHomePageState extends State<AiraHomePage>
 
       final chatData = jsonDecode(chatResponse.body);
       final replyText = chatData['text'] as String;
+
+      _chatHistory
+        ..add({'role': 'user', 'content': utterance})
+        ..add({'role': 'assistant', 'content': replyText});
+      while (_chatHistory.length > _maxChatHistoryMessages) {
+        _chatHistory.removeAt(0);
+      }
+      _lastChatAt = DateTime.now();
       final spokenText = _withSurveyInvitation(replyText);
 
       setState(() {
