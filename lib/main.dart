@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import 'app_config.dart';
@@ -98,6 +99,14 @@ class _AiraHomePageState extends State<AiraHomePage>
 
   /// 読み上げまで終わった会話の回数
   int _completedTurns = 0;
+
+  /// 画面に出しているQRコードのURL。出していないときは null。
+  /// バックエンドが返答に qr を付けたときだけ出す(出す・出さないはサーバー側の設定)。
+  String? _qrUrl;
+  Timer? _qrTimer;
+
+  /// QRコードを出しっぱなしにする時間。来場者がスマホで読み取るのに十分な長さ。
+  static const Duration _qrDisplayDuration = Duration(seconds: 60);
 
   /// 直近の会話。「はい」「それお願いします」のような短い返事を、AIが
   /// 直前のやりとりと結びつけて理解できるように、バックエンドへ一緒に送る。
@@ -198,6 +207,7 @@ class _AiraHomePageState extends State<AiraHomePage>
     _mouthCueTimer?.cancel();
     _blinkTimer?.cancel();
     _attractTimer?.cancel();
+    _qrTimer?.cancel();
     _pulseController.dispose();
     _audioPlayer.dispose();
     DeviceMonitor.instance.stop();
@@ -469,6 +479,54 @@ class _AiraHomePageState extends State<AiraHomePage>
     return '$replyText ${_strings.surveyInvitation}';
   }
 
+  void _showQr(String url) {
+    _qrTimer?.cancel();
+    _qrTimer = Timer(_qrDisplayDuration, _hideQr);
+    if (!mounted) return;
+    setState(() => _qrUrl = url);
+  }
+
+  void _hideQr() {
+    _qrTimer?.cancel();
+    _qrTimer = null;
+    if (!mounted || _qrUrl == null) return;
+    setState(() => _qrUrl = null);
+  }
+
+  Widget _buildQrCard(String url) {
+    return Card(
+      elevation: 8,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // スキャンしやすいよう、白地に黒の標準的な見た目にする
+            QrImageView(
+              data: url,
+              version: QrVersions.auto,
+              size: 200,
+              backgroundColor: Colors.white,
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 200,
+              child: Text(
+                _strings.qrCaption,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            TextButton(
+              onPressed: _hideQr,
+              child: Text(_strings.close),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _sendToBackend() async {
     try {
       final utterance = _recognizedText;
@@ -499,6 +557,17 @@ class _AiraHomePageState extends State<AiraHomePage>
 
       final chatData = jsonDecode(chatResponse.body);
       final replyText = chatData['text'] as String;
+
+      // サーバーが qr を付けてきたときだけ、その URL の QR コードを画面に出す。
+      // 付いていない返答では、前の QR を引きずらないよう消す。
+      final qrData = chatData['qr'];
+      final qrUrl =
+          (qrData is Map && qrData['url'] is String) ? qrData['url'] as String : null;
+      if (qrUrl != null) {
+        _showQr(qrUrl);
+      } else {
+        _hideQr();
+      }
 
       _chatHistory
         ..add({'role': 'user', 'content': utterance})
@@ -848,22 +917,32 @@ class _AiraHomePageState extends State<AiraHomePage>
       body: Column(
         children: [
           Expanded(
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: 1,
-                // 以前はAnimatedSwitcherで毎回フェードさせていたが、喋っている間は
-                // 口の形が(多いと100ms間隔程度で)頻繁に変わるため、そのたびに顔
-                // 全体がフェードアウト/インし、「ずっと点滅している」ように見えて
-                // しまっていた。実際の口の動きは瞬間的な切り替わりの方が自然に
-                // 見えるため、フェードなしで即座に切り替える。
-                // gaplessPlayback を付けることで、アセット切り替え中に一瞬
-                // 画像が消える(空白になる)のも防いでいる。
-                child: Image.asset(
-                  _comboAssetPath(_eyesOpen, _currentMouthShape),
-                  fit: BoxFit.contain,
-                  gaplessPlayback: true,
+            child: Stack(
+              children: [
+                Center(
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    // 以前はAnimatedSwitcherで毎回フェードさせていたが、喋っている間は
+                    // 口の形が(多いと100ms間隔程度で)頻繁に変わるため、そのたびに顔
+                    // 全体がフェードアウト/インし、「ずっと点滅している」ように見えて
+                    // しまっていた。実際の口の動きは瞬間的な切り替わりの方が自然に
+                    // 見えるため、フェードなしで即座に切り替える。
+                    // gaplessPlayback を付けることで、アセット切り替え中に一瞬
+                    // 画像が消える(空白になる)のも防いでいる。
+                    child: Image.asset(
+                      _comboAssetPath(_eyesOpen, _currentMouthShape),
+                      fit: BoxFit.contain,
+                      gaplessPlayback: true,
+                    ),
+                  ),
                 ),
-              ),
+                if (_qrUrl != null)
+                  Positioned(
+                    right: 24,
+                    top: 24,
+                    child: _buildQrCard(_qrUrl!),
+                  ),
+              ],
             ),
           ),
           Container(

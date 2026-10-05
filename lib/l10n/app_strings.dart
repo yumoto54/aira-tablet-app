@@ -33,6 +33,9 @@ abstract class AppStrings {
   // マイクを「押す→聞いている→送信→AIRAが話す」の流れが一目でわかるように、
   // AppStateごとに短いラベルを出す。
 
+  /// QRコードの下に出す案内
+  String get qrCaption;
+
   /// 何も操作していない(押せる)状態
   String get mainStatusIdle;
 
@@ -138,6 +141,9 @@ class _JaStrings extends AppStrings {
 
   @override
   String get voiceRetryPrompt => 'ごめんなさい、うまく聞き取れませんでした。もう一度、ゆっくりお話しいただけますか？';
+
+  @override
+  String get qrCaption => 'スマホで読み取ると、公式サイトが開きます';
 
   @override
   String get mainStatusIdle => 'マイクのボタンを押して、話しかけてください';
@@ -293,6 +299,9 @@ class _EnStrings extends AppStrings {
   @override
   String get voiceRetryPrompt =>
       "Sorry, I didn't catch that. Could you try again, a little more slowly?";
+
+  @override
+  String get qrCaption => 'Scan with your phone to open our official website';
 
   @override
   String get mainStatusIdle => 'Press the microphone button to start talking';
