@@ -53,5 +53,10 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Android 11以降で、端末の音声認識サービス(Googleなど)を見つけるために必要。
+             speech_to_text パッケージの推奨設定。無いと端末によっては認識が使えない。 -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
     </queries>
 </manifest>
