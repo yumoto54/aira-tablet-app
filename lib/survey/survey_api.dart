@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../app_config.dart';
 import '../l10n/app_locale.dart';
+import '../monitoring/device_monitor.dart';
 import 'survey_draft.dart';
 
 sealed class SurveySubmitResult {
@@ -70,8 +71,11 @@ Future<SurveySubmitResult> submitSurvey({
       return SurveySubmitInvalid(details);
     }
 
+    DeviceMonitor.instance
+        .recordApiFailure('survey: HTTP ${response.statusCode}');
     return SurveySubmitFailed('HTTP ${response.statusCode}');
   } catch (error) {
+    DeviceMonitor.instance.recordApiFailure('survey: $error');
     return SurveySubmitFailed('$error');
   } finally {
     // 呼び出し側から渡されたクライアントは、こちらの都合で閉じない。

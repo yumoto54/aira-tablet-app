@@ -35,6 +35,8 @@ dependencies:
   speech_to_text: ^7.0.0
   just_audio: ^0.9.40
   http: ^1.2.2
+  battery_plus: ^7.0.0
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:

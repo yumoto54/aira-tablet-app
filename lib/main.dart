@@ -11,6 +11,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'app_config.dart';
 import 'l10n/app_locale.dart';
 import 'l10n/app_strings.dart';
+import 'monitoring/device_monitor.dart';
 import 'survey/survey_flow_page.dart';
 
 void main() {
@@ -132,6 +133,8 @@ class _AiraHomePageState extends State<AiraHomePage>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
+    DeviceMonitor.instance.stateProvider = () => _state.name;
+    DeviceMonitor.instance.start();
     _initSpeech();
     _scheduleNextBlink();
     _scheduleAttractTimer();
@@ -187,6 +190,7 @@ class _AiraHomePageState extends State<AiraHomePage>
     _attractTimer?.cancel();
     _pulseController.dispose();
     _audioPlayer.dispose();
+    DeviceMonitor.instance.stop();
     super.dispose();
   }
 
@@ -200,6 +204,7 @@ class _AiraHomePageState extends State<AiraHomePage>
             unawaited(_finishListen(userStopped: false));
             return;
           }
+          DeviceMonitor.instance.recordSttFailure(error.errorMsg);
           setState(() {
             _errorMessage = 'Speech error: ${error.errorMsg}';
           });
@@ -219,6 +224,7 @@ class _AiraHomePageState extends State<AiraHomePage>
       );
       setState(() {});
     } catch (e) {
+      DeviceMonitor.instance.recordSttFailure('init failed: $e');
       setState(() {
         _errorMessage = 'Failed to initialize speech: $e';
       });
@@ -320,7 +326,8 @@ class _AiraHomePageState extends State<AiraHomePage>
 
       await _playAudioWithMouthSync(audioBase64, _smoothMouthCues(mouthCues));
       return true;
-    } catch (_) {
+    } catch (e) {
+      DeviceMonitor.instance.recordApiFailure('speak: $e');
       return false;
     }
   }
@@ -425,6 +432,7 @@ class _AiraHomePageState extends State<AiraHomePage>
   /// 聞き取れなかったときは、先にマイクを使える状態に戻してから聞き返す。
   /// 聞き返しのTTSを待っている間に画面が固まったように見えないようにするため。
   Future<void> _handleUnrecognizedSpeech() async {
+    DeviceMonitor.instance.recordSttFailure('no speech recognized');
     setState(() {
       _state = AppState.idle;
       _errorMessage = 'No speech recognized';
@@ -506,6 +514,7 @@ class _AiraHomePageState extends State<AiraHomePage>
 
       await _playAudioWithMouthSync(audioBase64, _smoothMouthCues(mouthCues));
     } catch (e) {
+      DeviceMonitor.instance.recordApiFailure('chat: $e');
       setState(() {
         _state = AppState.idle;
         _errorMessage = 'Error: $e\n\nMake sure the backend is running (npm start in freedom-ramen-avatar-backend)';
@@ -577,6 +586,7 @@ class _AiraHomePageState extends State<AiraHomePage>
               // アンケート誘導のカウントには含めない。
               if (!_isAttractSpeech) {
                 _completedTurns++;
+                DeviceMonitor.instance.recordConversation();
               }
             });
             _isAttractSpeech = false;
@@ -587,6 +597,7 @@ class _AiraHomePageState extends State<AiraHomePage>
 
       await _audioPlayer.play();
     } catch (e) {
+      DeviceMonitor.instance.recordApiFailure('audio: $e');
       setState(() {
         _state = AppState.idle;
         _errorMessage = 'Audio playback error: $e';
