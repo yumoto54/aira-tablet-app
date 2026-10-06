@@ -11,7 +11,7 @@ const String kDeviceId =
     String.fromEnvironment('DEVICE_ID', defaultValue: 'tablet-unknown');
 
 /// ダッシュボードに表示するアプリの版。アプリを更新したら上げる。
-const String kAppVersion = '0.2.1';
+const String kAppVersion = '0.2.2';
 
 /// 稼働状況を送る間隔。
 const Duration kHeartbeatInterval = Duration(seconds: 60);

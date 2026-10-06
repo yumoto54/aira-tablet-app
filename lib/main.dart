@@ -231,7 +231,17 @@ class _AiraHomePageState extends State<AiraHomePage>
     super.dispose();
   }
 
+  /// 音声認識の準備。起動直後は端末側の音声認識がまだ立ち上がっておらず、
+  /// 数十秒使えないことがあったので、使えるようになるまで一定間隔でやり直す。
   Future<void> _initSpeech() async {
+    for (var attempt = 0; attempt < 12 && mounted && !_speechAvailable; attempt++) {
+      await _initSpeechOnce();
+      if (_speechAvailable) break;
+      await Future<void>.delayed(const Duration(seconds: 5));
+    }
+  }
+
+  Future<void> _initSpeechOnce() async {
     try {
       _speechAvailable = await _speech.initialize(
         onError: (error) {
@@ -259,12 +269,10 @@ class _AiraHomePageState extends State<AiraHomePage>
           }
         },
       );
-      setState(() {});
+      if (mounted) setState(() {});
     } catch (e) {
       DeviceMonitor.instance.recordSttFailure('init failed: $e');
-      setState(() {
-        _errorMessage = 'Failed to initialize speech: $e';
-      });
+      // 準備中の再試行は静かに続ける(来場者にエラーは見せない)。
     }
   }
 
@@ -379,8 +387,13 @@ class _AiraHomePageState extends State<AiraHomePage>
 
   Future<void> _startRecording() async {
     if (!_speechAvailable) {
+      await _initSpeechOnce();
+    }
+    if (!_speechAvailable) {
       setState(() {
-        _errorMessage = 'Speech recognition not available. Please check microphone permissions.';
+        _errorMessage = _locale.isJapanese
+            ? '音声認識を準備しています。少しだけお待ちください。'
+            : 'Voice recognition is getting ready. Please wait a moment and try again.';
       });
       return;
     }
@@ -629,7 +642,9 @@ class _AiraHomePageState extends State<AiraHomePage>
       DeviceMonitor.instance.recordApiFailure('chat: $e');
       setState(() {
         _state = AppState.idle;
-        _errorMessage = 'Error: $e\n\nMake sure the backend is running (npm start in freedom-ramen-avatar-backend)';
+        _errorMessage = _locale.isJapanese
+            ? '通信がうまくいきませんでした。もう一度お試しください。'
+            : 'Something went wrong with the connection. Please try again.';
       });
       _scheduleAttractTimer();
     }
