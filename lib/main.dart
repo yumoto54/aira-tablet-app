@@ -186,7 +186,7 @@ class _AiraHomePageState extends State<AiraHomePage>
   String _comboAssetPath(bool eyesOpen, String mouthShape) {
     final eyeKey = eyesOpen ? 'open' : 'closed';
     final mouthKey = _normalizedMouthKey(mouthShape);
-    return 'assets/avatar/combined/AIRA_combo_${eyeKey}_$mouthKey.png';
+    return '$kAvatarAssetDir/combined/AIRA_combo_${eyeKey}_$mouthKey.png';
   }
 
   Future<void> _precacheAvatarImages() async {

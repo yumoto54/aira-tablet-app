@@ -22,3 +22,12 @@ const Duration kHeartbeatInterval = Duration(seconds: 60);
 /// 会場PCの有無に関係なく動くよう、ローカルPCのLAN IPではなくこのURLを使う。
 const String kApiBaseUrl =
     'https://freedom-ramen-aira-backend-dvhgffckgfffebes.westus3-01.azurewebsites.net';
+
+/// アバターの絵柄。'photo'(実写風・既定) か 'anime'(アニメ風)。
+/// ビルド時に指定する: flutter run --release -d <端末ID> --dart-define=AVATAR_STYLE=anime
+/// 指定しなければ従来どおり実写風になる。
+const String kAvatarStyle =
+    String.fromEnvironment('AVATAR_STYLE', defaultValue: 'photo');
+
+String get kAvatarAssetDir =>
+    kAvatarStyle == 'anime' ? 'assets/avatar_anime' : 'assets/avatar';
