@@ -80,6 +80,10 @@ class _AiraHomePageState extends State<AiraHomePage>
 
   AppState _state = AppState.idle;
   AppLocale _locale = AppLocale.en;
+
+  /// アバターの絵柄('photo' / 'anime')。起動時はビルド指定(kAvatarStyle)、
+  /// 画面上のボタンでその場で切り替えられる(会場デモ用)。
+  String _avatarStyle = kAvatarStyle;
   String _recognizedText = '';
   String _airaReplyText = '';
   String _currentMouthShape = 'neutral';
@@ -186,7 +190,8 @@ class _AiraHomePageState extends State<AiraHomePage>
   String _comboAssetPath(bool eyesOpen, String mouthShape) {
     final eyeKey = eyesOpen ? 'open' : 'closed';
     final mouthKey = _normalizedMouthKey(mouthShape);
-    return '$kAvatarAssetDir/combined/AIRA_combo_${eyeKey}_$mouthKey.png';
+    final dir = _avatarStyle == 'anime' ? 'assets/avatar_anime' : 'assets/avatar';
+    return '$dir/combined/AIRA_combo_${eyeKey}_$mouthKey.png';
   }
 
   Future<void> _precacheAvatarImages() async {
@@ -200,6 +205,18 @@ class _AiraHomePageState extends State<AiraHomePage>
       if (!mounted) return;
       await precacheImage(AssetImage(path), context);
     }
+  }
+
+  /// 絵柄を実写風⇔アニメ風に切り替える。切り替え先の画像を先に読み込んでから
+  /// 入れ替えるので、切り替えの瞬間にちらつかない。
+  Future<void> _toggleAvatarStyle() async {
+    final next = _avatarStyle == 'anime' ? 'photo' : 'anime';
+    final previous = _avatarStyle;
+    _avatarStyle = next; // _comboAssetPath が次の絵柄を指すようにして先読みする
+    await _precacheAvatarImages();
+    _avatarStyle = previous;
+    if (!mounted) return;
+    setState(() => _avatarStyle = next);
   }
 
   @override
@@ -904,6 +921,12 @@ class _AiraHomePageState extends State<AiraHomePage>
               setState(() => _locale = selection.first);
             },
             showSelectedIcon: false,
+          ),
+          const SizedBox(width: 12),
+          IconButton.filledTonal(
+            tooltip: _avatarStyle == 'anime' ? 'Photo style' : 'Anime style',
+            icon: const Icon(Icons.face_retouching_natural),
+            onPressed: _toggleAvatarStyle,
           ),
           const SizedBox(width: 16),
           FilledButton.icon(
