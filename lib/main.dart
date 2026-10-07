@@ -343,6 +343,7 @@ class _AiraHomePageState extends State<AiraHomePage>
             headers: {
               'Content-Type': 'application/json',
               'x-functions-key': kApiFunctionKey,
+              if (kTenantId.isNotEmpty) 'x-tenant-id': kTenantId,
             },
             body: jsonEncode({
               'text': text,
@@ -572,6 +573,7 @@ class _AiraHomePageState extends State<AiraHomePage>
             headers: {
               'Content-Type': 'application/json',
               'x-functions-key': kApiFunctionKey,
+              if (kTenantId.isNotEmpty) 'x-tenant-id': kTenantId,
             },
             body: jsonEncode({
               'utterance': utterance,
@@ -618,6 +620,7 @@ class _AiraHomePageState extends State<AiraHomePage>
             headers: {
               'Content-Type': 'application/json',
               'x-functions-key': kApiFunctionKey,
+              if (kTenantId.isNotEmpty) 'x-tenant-id': kTenantId,
             },
             body: jsonEncode({
               'text': spokenText,

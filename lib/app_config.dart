@@ -26,6 +26,10 @@ const String kApiBaseUrl =
 /// アバターの絵柄。'photo'(実写風・既定) か 'anime'(アニメ風)。
 /// ビルド時に指定する: flutter run --release -d <端末ID> --dart-define=AVATAR_STYLE=anime
 /// 指定しなければ従来どおり実写風になる。
+/// どのクライアント(テナント)として動かすか。ビルド時に --dart-define=TENANT_ID=hagiwara のように指定する。
+/// 未指定(空)なら、サーバー側で従来どおりフリーダムラーメンとして扱われる。
+const String kTenantId = String.fromEnvironment('TENANT_ID');
+
 const String kAvatarStyle =
     String.fromEnvironment('AVATAR_STYLE', defaultValue: 'photo');
 
