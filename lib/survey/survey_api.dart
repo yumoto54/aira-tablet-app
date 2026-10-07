@@ -46,6 +46,7 @@ Future<SurveySubmitResult> submitSurvey({
       headers: {
         'Content-Type': 'application/json',
         'x-functions-key': kApiFunctionKey,
+        if (kTenantId.isNotEmpty) 'x-tenant-id': kTenantId,
       },
       body: jsonEncode(draft.toRequestBody(locale)),
     );
