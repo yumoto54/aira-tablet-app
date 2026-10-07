@@ -218,6 +218,63 @@ void main() {
     expect(sentBody['consentToFollowUp'], true);
   });
 
+  testWidgets('性別・年代は任意: 選ばなければ送らず、選べば固定値で送る', (tester) async {
+    final bodies = <Map<String, dynamic>>[];
+    final client = MockClient((request) async {
+      bodies.add(jsonDecode(request.body) as Map<String, dynamic>);
+      return http.Response('{"code":"6KT9HB"}', 200);
+    });
+
+    await _pumpFlow(tester, client);
+    await _choose(tester, 'Spicy Miso');
+    await _choose(tester, '5');
+    await _choose(tester, 'SNS');
+    await _fillNameAndEmail(
+      tester,
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+    );
+
+    await tester.ensureVisible(find.text('男性'));
+    await tester.tap(find.text('男性'));
+    await tester.pump();
+    await tester.ensureVisible(find.text('30代'));
+    await tester.tap(find.text('30代'));
+    await tester.pump();
+
+    await tester.tap(find.text('送信する'));
+    await tester.pumpAndSettle();
+
+    final answers = bodies.single['answers'] as Map<String, dynamic>;
+    expect(answers['gender'], 'Male');
+    expect(answers['ageGroup'], '30s');
+  });
+
+  testWidgets('性別・年代を選ばなくても送信でき、項目は送られない', (tester) async {
+    late Map<String, dynamic> sentBody;
+    final client = MockClient((request) async {
+      sentBody = jsonDecode(request.body) as Map<String, dynamic>;
+      return http.Response('{"code":"6KT9HB"}', 200);
+    });
+
+    await _pumpFlow(tester, client);
+    await _choose(tester, 'Spicy Miso');
+    await _choose(tester, '5');
+    await _choose(tester, 'SNS');
+    await _fillNameAndEmail(
+      tester,
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+    );
+
+    await tester.tap(find.text('送信する'));
+    await tester.pumpAndSettle();
+
+    final answers = sentBody['answers'] as Map<String, dynamic>;
+    expect(answers.containsKey('gender'), false);
+    expect(answers.containsKey('ageGroup'), false);
+  });
+
   testWidgets('同意後にメールアドレスを消すとチェックも消える', (tester) async {
     final client = MockClient((request) async {
       return http.Response('{"code":"6KT9HB"}', 200);

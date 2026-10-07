@@ -9,6 +9,9 @@ class SurveyDraft {
   FlavorChoice? flavor;
   int? satisfaction;
   HowHeardChoice? howHeard;
+  /// 任意。未回答なら null のまま送らない。
+  GenderChoice? gender;
+  AgeGroupChoice? ageGroup;
   String name = '';
   String email = '';
 
@@ -45,6 +48,9 @@ class SurveyDraft {
         'flavorInterest': flavor?.apiValue ?? '',
         'satisfaction': satisfaction,
         'howHeard': howHeard?.apiValue ?? '',
+        // 任意項目は、選んだときだけ送る
+        if (gender != null) 'gender': gender!.apiValue,
+        if (ageGroup != null) 'ageGroup': ageGroup!.apiValue,
       },
       'name': name.trim(),
       'email': email.trim(),

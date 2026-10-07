@@ -458,6 +458,65 @@ class _SurveyFlowPageState extends State<SurveyFlowPage> {
               contentPadding: EdgeInsets.zero,
             ),
           ),
+        const SizedBox(height: 24),
+        _buildOptionalAboutYou(strings),
+      ],
+    );
+  }
+
+  /// 性別・年代(任意)。選ばなくても送信できる。タップし直すと選択を外せる。
+  Widget _buildOptionalAboutYou(AppStrings strings) {
+    Widget group<T>(
+      String title,
+      List<T> values,
+      T? selected,
+      String Function(T) label,
+      ValueChanged<T?> onChanged,
+    ) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              for (final value in values)
+                ChoiceChip(
+                  label: Text(label(value), style: const TextStyle(fontSize: 18)),
+                  selected: selected == value,
+                  onSelected: (isOn) => setState(() => onChanged(isOn ? value : null)),
+                ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          strings.optionalAboutYouTitle,
+          style: TextStyle(fontSize: 14, color: Theme.of(context).hintColor),
+        ),
+        const SizedBox(height: 12),
+        group<GenderChoice>(
+          strings.questionGender,
+          GenderChoice.values,
+          _draft.gender,
+          (v) => v.label(strings),
+          (v) => _draft.gender = v,
+        ),
+        const SizedBox(height: 16),
+        group<AgeGroupChoice>(
+          strings.questionAgeGroup,
+          AgeGroupChoice.values,
+          _draft.ageGroup,
+          (v) => v.label(strings),
+          (v) => _draft.ageGroup = v,
+        ),
       ],
     );
   }

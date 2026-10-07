@@ -74,6 +74,21 @@ abstract class AppStrings {
   /// 販促連絡の同意チェックボックスのラベル(オプトイン)
   String get consentToFollowUp;
 
+
+  // --- 任意の属性(性別・年代)。回答しなくても送信できる ---
+  String get optionalAboutYouTitle;
+  String get questionGender;
+  String get genderMale;
+  String get genderFemale;
+  String get genderNoAnswer;
+  String get questionAgeGroup;
+  String get ageUnder20;
+  String get age20s;
+  String get age30s;
+  String get age40s;
+  String get age50s;
+  String get age60Plus;
+
   String get nameFieldHint;
   String get emailFieldHint;
 
@@ -198,6 +213,31 @@ class _JaStrings extends AppStrings {
 
   @override
   String get consentToFollowUp => 'AIRAからお得な情報や新商品のお知らせを受け取る（任意）';
+
+  @override
+  String get optionalAboutYouTitle => 'よろしければ教えてください（任意・回答しなくても送信できます）';
+  @override
+  String get questionGender => '性別';
+  @override
+  String get genderMale => '男性';
+  @override
+  String get genderFemale => '女性';
+  @override
+  String get genderNoAnswer => '回答しない';
+  @override
+  String get questionAgeGroup => '年代';
+  @override
+  String get ageUnder20 => '20歳未満';
+  @override
+  String get age20s => '20代';
+  @override
+  String get age30s => '30代';
+  @override
+  String get age40s => '40代';
+  @override
+  String get age50s => '50代';
+  @override
+  String get age60Plus => '60歳以上';
 
   @override
   String get nameFieldHint => '例: 山田 太郎';
@@ -360,6 +400,32 @@ class _EnStrings extends AppStrings {
   @override
   String get consentToFollowUp =>
       'Send me deals and news about new products from AIRA (optional)';
+
+  @override
+  String get optionalAboutYouTitle =>
+      'If you like, tell us a bit about yourself (optional - you can skip this)';
+  @override
+  String get questionGender => 'Gender';
+  @override
+  String get genderMale => 'Male';
+  @override
+  String get genderFemale => 'Female';
+  @override
+  String get genderNoAnswer => 'Prefer not to say';
+  @override
+  String get questionAgeGroup => 'Age group';
+  @override
+  String get ageUnder20 => 'Under 20';
+  @override
+  String get age20s => '20s';
+  @override
+  String get age30s => '30s';
+  @override
+  String get age40s => '40s';
+  @override
+  String get age50s => '50s';
+  @override
+  String get age60Plus => '60 or over';
 
   @override
   String get nameFieldHint => 'e.g. Jane Doe';

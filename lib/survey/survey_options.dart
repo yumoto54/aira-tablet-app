@@ -41,6 +41,47 @@ enum HowHeardChoice {
       };
 }
 
+/// 性別(任意)。回答しない人のために「回答しない」を選択肢として持つ。
+/// 性別は声や見た目から推定せず、本人が選んだものだけを記録する。
+enum GenderChoice {
+  male('Male'),
+  female('Female'),
+  noAnswer('Prefer not to say');
+
+  const GenderChoice(this.apiValue);
+
+  final String apiValue;
+
+  String label(AppStrings strings) => switch (this) {
+        GenderChoice.male => strings.genderMale,
+        GenderChoice.female => strings.genderFemale,
+        GenderChoice.noAnswer => strings.genderNoAnswer,
+      };
+}
+
+/// 年代(任意)。生年月日のような細かい情報は取らず、幅だけにする。
+enum AgeGroupChoice {
+  under20('Under 20'),
+  s20('20s'),
+  s30('30s'),
+  s40('40s'),
+  s50('50s'),
+  over60('60+');
+
+  const AgeGroupChoice(this.apiValue);
+
+  final String apiValue;
+
+  String label(AppStrings strings) => switch (this) {
+        AgeGroupChoice.under20 => strings.ageUnder20,
+        AgeGroupChoice.s20 => strings.age20s,
+        AgeGroupChoice.s30 => strings.age30s,
+        AgeGroupChoice.s40 => strings.age40s,
+        AgeGroupChoice.s50 => strings.age50s,
+        AgeGroupChoice.over60 => strings.age60Plus,
+      };
+}
+
 /// 音声入力を選択肢に対応づけるためのキーワード。
 ///
 /// 表示言語で絞らず日英まとめて持たせている。日本語表示のまま英語で
