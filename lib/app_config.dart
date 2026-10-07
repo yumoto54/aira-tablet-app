@@ -23,8 +23,9 @@ const Duration kHeartbeatInterval = Duration(seconds: 60);
 const String kApiBaseUrl =
     'https://freedom-ramen-aira-backend-dvhgffckgfffebes.westus3-01.azurewebsites.net';
 
-/// アバターの絵柄。'photo'(実写風・既定)、'anime'(アニメ風)、'male'(男性・ハギワラ用)。
-/// 'male' は絵柄が1つだけなので、画面の絵柄切り替えボタンは出さない。
+/// アバターの絵柄。'photo'(実写風・既定)、'anime'(アニメ風)、
+/// 'male'(男性・実写風)、'male_anime'(男性・アニメ風。ハギワラ用)。
+/// 画面の切り替えボタンは、女性は photo⇔anime、男性は male⇔male_anime を行き来する。
 /// ビルド時に指定する: flutter run --release -d <端末ID> --dart-define=AVATAR_STYLE=anime
 /// 指定しなければ従来どおり実写風になる。
 /// どのクライアント(テナント)として動かすか。ビルド時に --dart-define=TENANT_ID=hagiwara のように指定する。
@@ -38,7 +39,19 @@ const String kAvatarStyle =
 String avatarAssetDirFor(String style) => switch (style) {
       'anime' => 'assets/avatar_anime',
       'male' => 'assets/avatar_male',
+      'male_anime' => 'assets/avatar_male_anime',
       _ => 'assets/avatar',
     };
+
+/// 切り替えボタンを押したときの、次の絵柄。同じ人物の写真風⇔アニメ風を行き来する。
+String toggledAvatarStyle(String style) => switch (style) {
+      'anime' => 'photo',
+      'male' => 'male_anime',
+      'male_anime' => 'male',
+      _ => 'anime',
+    };
+
+/// 現在の絵柄がアニメ風か(ボタンの説明文に使う)。
+bool isAnimeAvatarStyle(String style) => style == 'anime' || style == 'male_anime';
 
 String get kAvatarAssetDir => avatarAssetDirFor(kAvatarStyle);

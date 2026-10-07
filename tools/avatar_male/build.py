@@ -1,7 +1,9 @@
 """
 男性アバター(ハギワラ用)の16フレームを、提供された透過PNG(2048x2048)から組み立てる。
 
-  python build.py <素材フォルダ(processed_transparent)> <出力フォルダ>
+  python build.py <素材フォルダ(processed_transparent)> <出力フォルダ> [photo|anime]
+
+  photo: male_*.png(写真風)  /  anime: male_anime_*.png(アニメ風)
 
 方針(AIRAのアニメ版と同じ考え方):
   - 土台は male_mouth_neutral(= neutral / eyes_open と同一)。
@@ -16,19 +18,29 @@ import numpy as np
 import cv2
 from PIL import Image
 
-SRC_NAME = {  # アプリの口キー -> 素材ファイル
-    "neutral": "mouth_neutral", "A": "mouth_A", "E": "mouth_EE", "FV": "mouth_FV",
-    "L": "mouth_L", "MPB": "mouth_MBP", "O": "mouth_OO", "TH": "mouth_TH",
-}
 OUT = 768
 
-# 2048px 座標。口は顎の動きまで含める。目は眉を含めない範囲。
-MOUTH = dict(cx=1020, cy=925, rx=165, ry=170, feather=40)
-EYES = dict(cx=1030, cy=585, rx=215, ry=62, feather=22)
+# 絵柄ごとの設定。座標は 2048px。口は顎の動きまで含める。目は眉を含めない範囲。
+STYLES = {
+    "photo": dict(
+        prefix="male_",
+        names={"neutral": "mouth_neutral", "A": "mouth_A", "E": "mouth_EE", "FV": "mouth_FV",
+               "L": "mouth_L", "MPB": "mouth_MBP", "O": "mouth_OO", "TH": "mouth_TH"},
+        mouth=dict(cx=1020, cy=925, rx=165, ry=170, feather=40),
+        eyes=dict(cx=1030, cy=585, rx=215, ry=62, feather=22),
+    ),
+    "anime": dict(
+        prefix="male_anime_",
+        names={"neutral": "mouth_neutral", "A": "mouth_A", "E": "mouth_E", "FV": "mouth_FV",
+               "L": "mouth_L", "MPB": "mouth_MBP", "O": "mouth_O", "TH": "mouth_TH"},
+        mouth=dict(cx=990, cy=978, rx=190, ry=165, feather=40),
+        eyes=dict(cx=1021, cy=603, rx=225, ry=66, feather=22),
+    ),
+}
 
 
-def load(folder, name):
-    return np.asarray(Image.open(f"{folder}/male_{name}.png").convert("RGBA"))
+def load(folder, prefix, name):
+    return np.asarray(Image.open(f"{folder}/{prefix}{name}.png").convert("RGBA"))
 
 
 def ellipse_mask(shape, p, grow=0):
@@ -72,16 +84,18 @@ def save(rgb, alpha, path):
     Image.fromarray(im, "RGBA").resize((OUT, OUT), Image.LANCZOS).save(path, optimize=True)
 
 
-def main(src, out):
+def main(src, out, style="photo"):
+    cfg = STYLES[style]
+    MOUTH, EYES, SRC_NAME, prefix = cfg["mouth"], cfg["eyes"], cfg["names"], cfg["prefix"]
     import os
     os.makedirs(f"{out}/combined", exist_ok=True)
-    base = load(src, "mouth_neutral")
+    base = load(src, prefix, "mouth_neutral")
     base_rgb, alpha = base[..., :3], base[..., 3]
-    closed_rgb = load(src, "eyes_closed")[..., :3]
+    closed_rgb = load(src, prefix, "eyes_closed")[..., :3]
 
     save(base_rgb, alpha, f"{out}/AIRA_base_neutral.png")
     for key, name in SRC_NAME.items():
-        open_rgb = base_rgb if key == "neutral" else paste(base_rgb, load(src, name)[..., :3], MOUTH)
+        open_rgb = base_rgb if key == "neutral" else paste(base_rgb, load(src, prefix, name)[..., :3], MOUTH)
         save(open_rgb, alpha, f"{out}/combined/AIRA_combo_open_{key}.png")
         closed = paste(open_rgb, closed_rgb, EYES)
         save(closed, alpha, f"{out}/combined/AIRA_combo_closed_{key}.png")
@@ -89,4 +103,4 @@ def main(src, out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else "photo")

@@ -210,7 +210,7 @@ class _AiraHomePageState extends State<AiraHomePage>
   /// 絵柄を実写風⇔アニメ風に切り替える。切り替え先の画像を先に読み込んでから
   /// 入れ替えるので、切り替えの瞬間にちらつかない。
   Future<void> _toggleAvatarStyle() async {
-    final next = _avatarStyle == 'anime' ? 'photo' : 'anime';
+    final next = toggledAvatarStyle(_avatarStyle);
     final previous = _avatarStyle;
     _avatarStyle = next; // _comboAssetPath が次の絵柄を指すようにして先読みする
     await _precacheAvatarImages();
@@ -940,15 +940,12 @@ class _AiraHomePageState extends State<AiraHomePage>
             },
             showSelectedIcon: false,
           ),
-          // 男性アバター(ハギワラ用)は絵柄が1つだけなので、切り替えボタンは出さない
-          if (kAvatarStyle != 'male') ...[
-            const SizedBox(width: 12),
-            IconButton.filledTonal(
-              tooltip: _avatarStyle == 'anime' ? 'Photo style' : 'Anime style',
-              icon: const Icon(Icons.face_retouching_natural),
-              onPressed: _toggleAvatarStyle,
-            ),
-          ],
+          const SizedBox(width: 12),
+          IconButton.filledTonal(
+            tooltip: isAnimeAvatarStyle(_avatarStyle) ? 'Photo style' : 'Anime style',
+            icon: const Icon(Icons.face_retouching_natural),
+            onPressed: _toggleAvatarStyle,
+          ),
           const SizedBox(width: 16),
           FilledButton.icon(
             onPressed: _openSurvey,
