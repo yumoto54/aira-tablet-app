@@ -190,7 +190,7 @@ class _AiraHomePageState extends State<AiraHomePage>
   String _comboAssetPath(bool eyesOpen, String mouthShape) {
     final eyeKey = eyesOpen ? 'open' : 'closed';
     final mouthKey = _normalizedMouthKey(mouthShape);
-    final dir = _avatarStyle == 'anime' ? 'assets/avatar_anime' : 'assets/avatar';
+    final dir = avatarAssetDirFor(_avatarStyle);
     return '$dir/combined/AIRA_combo_${eyeKey}_$mouthKey.png';
   }
 
@@ -940,12 +940,15 @@ class _AiraHomePageState extends State<AiraHomePage>
             },
             showSelectedIcon: false,
           ),
-          const SizedBox(width: 12),
-          IconButton.filledTonal(
-            tooltip: _avatarStyle == 'anime' ? 'Photo style' : 'Anime style',
-            icon: const Icon(Icons.face_retouching_natural),
-            onPressed: _toggleAvatarStyle,
-          ),
+          // 男性アバター(ハギワラ用)は絵柄が1つだけなので、切り替えボタンは出さない
+          if (kAvatarStyle != 'male') ...[
+            const SizedBox(width: 12),
+            IconButton.filledTonal(
+              tooltip: _avatarStyle == 'anime' ? 'Photo style' : 'Anime style',
+              icon: const Icon(Icons.face_retouching_natural),
+              onPressed: _toggleAvatarStyle,
+            ),
+          ],
           const SizedBox(width: 16),
           FilledButton.icon(
             onPressed: _openSurvey,

@@ -66,6 +66,8 @@ flutter:
     - assets/avatar/combined/
     - assets/avatar_anime/
     - assets/avatar_anime/combined/
+    - assets/avatar_male/
+    - assets/avatar_male/combined/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
