@@ -13,6 +13,7 @@ import 'app_config.dart';
 import 'l10n/app_locale.dart';
 import 'l10n/app_strings.dart';
 import 'monitoring/device_monitor.dart';
+import 'monitoring/network_status.dart';
 import 'survey/survey_flow_page.dart';
 
 void main() {
@@ -305,6 +306,14 @@ class _AiraHomePageState extends State<AiraHomePage>
   Future<void> _playAttractMessage() async {
     if (!mounted || _state != AppState.idle) return;
 
+    // インターネットに出られない間は、呼び込み発話を試さない(失敗を積み上げない)。
+    // 代わりに軽い通信で回復を確かめ、次のタイミングでやり直す。
+    if (NetworkStatus.instance.offline.value) {
+      await NetworkStatus.instance.probe(kApiBaseUrl);
+      if (mounted && _state == AppState.idle) _scheduleAttractTimer();
+      return;
+    }
+
     final message =
         _strings.attractMessages[_random.nextInt(_strings.attractMessages.length)];
 
@@ -355,6 +364,7 @@ class _AiraHomePageState extends State<AiraHomePage>
       if (speakResponse.statusCode != 200) {
         throw Exception('Speak API failed: ${speakResponse.statusCode}');
       }
+      NetworkStatus.instance.reportSuccess();
 
       if (!mounted) return false;
       if (shouldContinue != null && !shouldContinue()) return false;
@@ -373,6 +383,7 @@ class _AiraHomePageState extends State<AiraHomePage>
       await _playAudioWithMouthSync(audioBase64, _smoothMouthCues(mouthCues));
       return true;
     } catch (e) {
+      NetworkStatus.instance.reportFailure(e);
       DeviceMonitor.instance.recordApiFailure('speak: $e');
       return false;
     }
@@ -586,6 +597,7 @@ class _AiraHomePageState extends State<AiraHomePage>
       if (chatResponse.statusCode != 200) {
         throw Exception('Chat API failed: ${chatResponse.statusCode}');
       }
+      NetworkStatus.instance.reportSuccess();
 
       final chatData = jsonDecode(chatResponse.body);
       final replyText = chatData['text'] as String;
@@ -642,6 +654,7 @@ class _AiraHomePageState extends State<AiraHomePage>
 
       await _playAudioWithMouthSync(audioBase64, _smoothMouthCues(mouthCues));
     } catch (e) {
+      NetworkStatus.instance.reportFailure(e);
       DeviceMonitor.instance.recordApiFailure('chat: $e');
       setState(() {
         _state = AppState.idle;
@@ -957,6 +970,35 @@ class _AiraHomePageState extends State<AiraHomePage>
       ),
       body: Column(
         children: [
+          // インターネットに出られないときの警告(来場者にもスタッフにも見えるよう英語を先に出す)
+          ValueListenableBuilder<bool>(
+            valueListenable: NetworkStatus.instance.offline,
+            builder: (context, offline, _) {
+              if (!offline) return const SizedBox.shrink();
+              return Container(
+                width: double.infinity,
+                color: Colors.red[700],
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: const Row(
+                  children: [
+                    Icon(Icons.wifi_off, color: Colors.white),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'No internet connection. Please ask our staff for help.\n'
+                        'インターネットに接続できません。スタッフにお声がけください。',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           Expanded(
             child: Stack(
               children: [
