@@ -15,6 +15,7 @@ import 'l10n/app_strings.dart';
 import 'monitoring/device_monitor.dart';
 import 'monitoring/network_status.dart';
 import 'survey/survey_flow_page.dart';
+import 'widgets/expo_ai_logo.dart';
 
 void main() {
   runApp(const AiraApp());
@@ -935,7 +936,7 @@ class _AiraHomePageState extends State<AiraHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AIRA Tablet App'),
+        title: const ExpoAiLogo(),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         // マイクは画面下、アンケート導線は画面上。押し間違えないように離しておく。
         actions: [
