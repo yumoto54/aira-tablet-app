@@ -1,6 +1,6 @@
 import 'app_locale.dart';
 
-/// 画面と音声で使う文言。日本語と英語の2言語分を持つ。
+/// 画面と音声で使う文言。日本語・英語・繁体字中国語(台湾)の3言語分を持つ。
 ///
 /// 来場者が選んだ言語で表示・発話するが、APIに保存する回答値は言語に依存しない
 /// 正規形(survey_options.dart の apiValue)を使う。表示言語で集計がぶれないようにするため。
@@ -9,8 +9,13 @@ abstract class AppStrings {
 
   static const AppStrings _ja = _JaStrings();
   static const AppStrings _en = _EnStrings();
+  static const AppStrings _zhTw = _ZhTwStrings();
 
-  static AppStrings of(AppLocale locale) => locale.isJapanese ? _ja : _en;
+  static AppStrings of(AppLocale locale) => switch (locale) {
+        AppLocale.ja => _ja,
+        AppLocale.zhTw => _zhTw,
+        AppLocale.en => _en,
+      };
 
   // --- メイン画面 ---
 
@@ -440,4 +445,160 @@ class _EnStrings extends AppStrings {
 
   @override
   String get close => 'Close';
+}
+
+class _ZhTwStrings extends AppStrings {
+  const _ZhTwStrings();
+
+  @override
+  String get surveyCta => '填問卷，領取贈品';
+
+  @override
+  String get surveyInvitation => '對了，回答一份簡單的問卷，就可以獲得贈品喔。';
+
+  @override
+  List<String> get attractMessages => const [
+        '您好！我是 Freedom Ramen 的 AIRA。請按下麥克風按鈕，想知道什麼都可以問我喔！',
+        '路過的朋友，您好！回答一份簡單的問卷，就能獲得贈品喔。',
+        '想知道我們的拉麵有什麼特別嗎？按下麥克風按鈕，我來告訴您。',
+        '只要回答一份簡單的問卷，就能領取贈品！歡迎來試試看。',
+      ];
+
+  @override
+  String get voiceRetryPrompt => '不好意思，我沒有聽清楚。可以請您再說一次，慢一點嗎？';
+
+  @override
+  String get qrCaption => '用手機掃描，就能開啟官方網站';
+
+  @override
+  String get mainStatusIdle => '請按下麥克風按鈕，開始說話';
+
+  @override
+  String get mainStatusListening => '正在聽…說完後請再按一次按鈕';
+
+  @override
+  String get mainStatusSending => '已送出。AIRA 正在思考…';
+
+  @override
+  String get mainStatusSpeaking => 'AIRA 正在說話';
+
+  @override
+  String get surveyTitle => '問卷調查';
+
+  @override
+  String stepIndicator(int step, int totalSteps) => '第 $step 步，共 $totalSteps 步';
+
+  @override
+  String get back => '上一步';
+
+  @override
+  String get next => '下一步';
+
+  @override
+  String get submit => '送出';
+
+  @override
+  String get submitting => '送出中…';
+
+  @override
+  String get submitNetworkError => '無法送出。請確認網路連線後，再試一次。';
+
+  @override
+  String get questionFlavor => '您對哪個口味有興趣？';
+
+  @override
+  String get questionSatisfaction => '您會想再買嗎？';
+
+  @override
+  String get questionHowHeard => '您是從哪裡得知這個攤位的？';
+
+  @override
+  String get questionName => '請問您的大名？';
+
+  @override
+  String get questionEmail => '請問您的電子郵件信箱？';
+
+  @override
+  String get emailNote => '只有在您勾選下方選項的情況下，我們才會寄送消息給您。';
+
+  @override
+  String get consentToFollowUp => '我願意收到 AIRA 的優惠與新產品消息（選填）';
+
+  @override
+  String get nameFieldHint => '例如：王小明';
+
+  @override
+  String get emailFieldHint => '例如：name@example.com';
+
+  @override
+  String get nameRequired => '請輸入您的姓名。';
+
+  @override
+  String get emailRequired => '請輸入您的電子郵件信箱。';
+
+  @override
+  String get emailInvalid => '電子郵件格式似乎不正確。';
+
+  @override
+  String get voiceHint => '可以按按鈕，也可以用說的回答。';
+
+  @override
+  String get voiceAnswerButton => '用說的回答';
+
+  @override
+  String get voiceListening => '正在聽…';
+
+  @override
+  String get voiceStop => '停止';
+
+  @override
+  String get voiceNoMatch => '不好意思，我沒有聽清楚。請改用按鈕選擇。';
+
+  @override
+  String get voiceUnavailable => '無法使用麥克風。請改用按鈕選擇。';
+
+  @override
+  String get voiceFillName => '語音輸入';
+
+  @override
+  List<String> get satisfactionLabels => const [
+        '完全不會',
+        '大概不會',
+        '不確定',
+        '會',
+        '一定會',
+      ];
+
+  @override
+  String get flavorSpicyMiso => '辣味噌 Spicy Miso';
+
+  @override
+  String get flavorJapaneseCurry => '日式咖哩 Japanese Curry';
+
+  @override
+  String get flavorSeafood => '海鮮 Seafood';
+
+  @override
+  String get flavorUndecided => '還沒決定';
+
+  @override
+  String get howHeardSns => '社群媒體';
+
+  @override
+  String get howHeardReferral => '朋友介紹';
+
+  @override
+  String get howHeardWalkedBy => '剛好路過';
+
+  @override
+  String get howHeardOther => '其他';
+
+  @override
+  String get completionTitle => '謝謝您！';
+
+  @override
+  String get completionShowStaff => '請將這個代碼出示給工作人員';
+
+  @override
+  String get close => '關閉';
 }

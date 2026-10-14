@@ -406,7 +406,9 @@ class _AiraHomePageState extends State<AiraHomePage>
       setState(() {
         _errorMessage = _locale.isJapanese
             ? '音声認識を準備しています。少しだけお待ちください。'
-            : 'Voice recognition is getting ready. Please wait a moment and try again.';
+            : _locale.isChinese
+                ? '語音辨識準備中，請稍等一下再試一次。'
+                : 'Voice recognition is getting ready. Please wait a moment and try again.';
       });
       return;
     }
@@ -661,7 +663,9 @@ class _AiraHomePageState extends State<AiraHomePage>
         _state = AppState.idle;
         _errorMessage = _locale.isJapanese
             ? '通信がうまくいきませんでした。もう一度お試しください。'
-            : 'Something went wrong with the connection. Please try again.';
+            : _locale.isChinese
+                ? '連線發生問題，請再試一次。'
+                : 'Something went wrong with the connection. Please try again.';
       });
       _scheduleAttractTimer();
     }
@@ -987,7 +991,8 @@ class _AiraHomePageState extends State<AiraHomePage>
                     Expanded(
                       child: Text(
                         'No internet connection. Please ask our staff for help.\n'
-                        'インターネットに接続できません。スタッフにお声がけください。',
+                        'インターネットに接続できません。スタッフにお声がけください。\n'
+                        '無法連上網路，請洽工作人員協助。',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

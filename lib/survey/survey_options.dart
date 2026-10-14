@@ -54,12 +54,15 @@ const Map<FlavorChoice, List<String>> kFlavorVoiceKeywords = {
     'ミソ',
     'みそ',
     '味噌',
+    '辣味噌',
   ],
   FlavorChoice.japaneseCurry: [
     'japanese curry',
     'curry',
     'カレー',
     'かれー',
+    '咖哩',
+    '咖喱',
   ],
   FlavorChoice.seafood: [
     'seafood',
@@ -67,6 +70,7 @@ const Map<FlavorChoice, List<String>> kFlavorVoiceKeywords = {
     'シーフード',
     '海鮮',
     'かいせん',
+    '海鲜',
   ],
   FlavorChoice.undecided: [
     'not decided',
@@ -79,6 +83,10 @@ const Map<FlavorChoice, List<String>> kFlavorVoiceKeywords = {
     'きめてない',
     '決まってない',
     'わからない',
+    '還沒決定',
+    '還沒有決定',
+    '還沒想好',
+    '不確定',
   ],
 };
 
@@ -97,6 +105,13 @@ const Map<HowHeardChoice, List<String>> kHowHeardVoiceKeywords = {
     'ティックトック',
     'ツイッター',
     'エックス',
+    '臉書',
+    '社群',
+    '網路',
+    '抖音',
+    '推特',
+    'ig',
+    'line',
   ],
   HowHeardChoice.referral: [
     'friend',
@@ -110,6 +125,9 @@ const Map<HowHeardChoice, List<String>> kHowHeardVoiceKeywords = {
     'ともだち',
     '紹介',
     '口コミ',
+    '朋友',
+    '介紹',
+    '口碑',
   ],
   HowHeardChoice.walkedBy: [
     'walked by',
@@ -123,6 +141,10 @@ const Map<HowHeardChoice, List<String>> kHowHeardVoiceKeywords = {
     '偶然',
     'たまたま',
     '歩いてて',
+    '路過',
+    '剛好經過',
+    '經過',
+    '看到攤位',
   ],
   HowHeardChoice.other: [
     'other',
@@ -130,5 +152,8 @@ const Map<HowHeardChoice, List<String>> kHowHeardVoiceKeywords = {
     'その他',
     'そのほか',
     'ほかの',
+    '其他',
+    '其它',
+    '別的',
   ],
 };

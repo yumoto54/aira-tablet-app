@@ -12,6 +12,12 @@ enum AppLocale {
     tag: 'ja-JP',
     sttLocaleId: 'ja_JP',
     switcherLabel: '日本語',
+  ),
+  // 台湾向けの繁体字中国語(標準中国語)。音声認識・音声合成とも zh-TW。
+  zhTw(
+    tag: 'zh-TW',
+    sttLocaleId: 'zh_TW',
+    switcherLabel: '中文',
   );
 
   const AppLocale({
@@ -29,4 +35,6 @@ enum AppLocale {
   final String switcherLabel;
 
   bool get isJapanese => this == AppLocale.ja;
+
+  bool get isChinese => this == AppLocale.zhTw;
 }
