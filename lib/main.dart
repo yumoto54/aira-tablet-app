@@ -117,6 +117,15 @@ class _AiraHomePageState extends State<AiraHomePage>
   /// 直近の会話。「はい」「それお願いします」のような短い返事を、AIが
   /// 直前のやりとりと結びつけて理解できるように、バックエンドへ一緒に送る。
   final List<Map<String, String>> _chatHistory = [];
+
+  /// 1回の会話(最後のやりとりから一定時間あくまで)を表す、ランダムな匿名の番号。
+  /// 個人を特定する情報ではなく、質問ログで「同じ人の続きの質問」をつなげるために使う。
+  String _sessionId = '';
+
+  String _newSessionId() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    return List.generate(12, (_) => chars[_random.nextInt(chars.length)]).join();
+  }
   DateTime? _lastChatAt;
 
   /// この時間しゃべりかけられなかったら、次の来場者とみなして履歴を捨てる。
@@ -579,7 +588,9 @@ class _AiraHomePageState extends State<AiraHomePage>
       if (_lastChatAt == null ||
           startedAt.difference(_lastChatAt!) > _chatHistoryTimeout) {
         _chatHistory.clear();
+        _sessionId = _newSessionId();
       }
+      if (_sessionId.isEmpty) _sessionId = _newSessionId();
 
       final chatResponse = await http
           .post(
@@ -592,6 +603,8 @@ class _AiraHomePageState extends State<AiraHomePage>
             body: jsonEncode({
               'utterance': utterance,
               'locale': _locale.tag,
+              'deviceId': kDeviceId,
+              'sessionId': _sessionId,
               'history': _chatHistory,
             }),
           )
