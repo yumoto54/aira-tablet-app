@@ -4,7 +4,6 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -14,6 +13,7 @@ import 'l10n/app_locale.dart';
 import 'l10n/app_strings.dart';
 import 'monitoring/device_monitor.dart';
 import 'monitoring/network_status.dart';
+import 'net/retrying_post.dart';
 import 'survey/survey_flow_page.dart';
 import 'widgets/expo_ai_logo.dart';
 
@@ -356,8 +356,7 @@ class _AiraHomePageState extends State<AiraHomePage>
     Duration timeout = const Duration(seconds: 8),
   }) async {
     try {
-      final speakResponse = await http
-          .post(
+      final speakResponse = await retryingPost(
             Uri.parse('$kApiBaseUrl/api/speak'),
             headers: {
               'Content-Type': 'application/json',
@@ -368,8 +367,8 @@ class _AiraHomePageState extends State<AiraHomePage>
               'text': text,
               'locale': _locale.tag,
             }),
-          )
-          .timeout(timeout);
+            timeout: timeout,
+          );
 
       if (speakResponse.statusCode != 200) {
         throw Exception('Speak API failed: ${speakResponse.statusCode}');
@@ -592,8 +591,7 @@ class _AiraHomePageState extends State<AiraHomePage>
       }
       if (_sessionId.isEmpty) _sessionId = _newSessionId();
 
-      final chatResponse = await http
-          .post(
+      final chatResponse = await retryingPost(
             Uri.parse('$kApiBaseUrl/api/chat'),
             headers: {
               'Content-Type': 'application/json',
@@ -607,8 +605,8 @@ class _AiraHomePageState extends State<AiraHomePage>
               'sessionId': _sessionId,
               'history': _chatHistory,
             }),
-          )
-          .timeout(const Duration(seconds: 8));
+            timeout: const Duration(seconds: 8),
+          );
 
       if (chatResponse.statusCode != 200) {
         throw Exception('Chat API failed: ${chatResponse.statusCode}');
@@ -642,8 +640,7 @@ class _AiraHomePageState extends State<AiraHomePage>
         _airaReplyText = spokenText;
       });
 
-      final speakResponse = await http
-          .post(
+      final speakResponse = await retryingPost(
             Uri.parse('$kApiBaseUrl/api/speak'),
             headers: {
               'Content-Type': 'application/json',
@@ -654,8 +651,8 @@ class _AiraHomePageState extends State<AiraHomePage>
               'text': spokenText,
               'locale': _locale.tag,
             }),
-          )
-          .timeout(const Duration(seconds: 8));
+            timeout: const Duration(seconds: 8),
+          );
 
       if (speakResponse.statusCode != 200) {
         throw Exception('Speak API failed: ${speakResponse.statusCode}');
