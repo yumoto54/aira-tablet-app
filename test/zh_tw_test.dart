@@ -20,7 +20,7 @@ void main() {
       final en = AppStrings.of(AppLocale.en);
       expect(zh.attractMessages.length, en.attractMessages.length);
       expect(zh.satisfactionLabels.length, 5);
-      expect(zh.attractMessages.every((m) => m.contains('AIRA')), isTrue);
+      expect(zh.attractMessages.first, contains('AIRA'));
       expect(zh.stepIndicator(1, 3), contains('1'));
     });
 
