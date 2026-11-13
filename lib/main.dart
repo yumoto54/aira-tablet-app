@@ -960,7 +960,7 @@ class _AiraHomePageState extends State<AiraHomePage>
               for (final locale in AppLocale.values)
                 ButtonSegment<AppLocale>(
                   value: locale,
-                  label: Text(locale.switcherLabel),
+                  label: Text('${locale.flag} ${locale.switcherLabel}'),
                 ),
             ],
             selected: {_locale},

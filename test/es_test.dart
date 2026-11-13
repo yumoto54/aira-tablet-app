@@ -9,6 +9,9 @@ void main() {
       expect(AppLocale.es.tag, 'es-US');
       expect(AppLocale.es.sttLocaleId, 'es_US');
       expect(AppLocale.es.switcherLabel, 'ES');
+      expect(AppLocale.es.flag, '🇪🇸');
+      expect(AppLocale.en.flag, '🇺🇸');
+      expect(AppLocale.ja.flag, '🇯🇵');
       expect(AppLocale.es.isSpanish, isTrue);
       expect(AppLocale.es.isJapanese, isFalse);
       expect(AppLocale.en.isSpanish, isFalse);
