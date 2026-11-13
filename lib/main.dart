@@ -960,9 +960,26 @@ class _AiraHomePageState extends State<AiraHomePage>
               for (final locale in AppLocale.values)
                 ButtonSegment<AppLocale>(
                   value: locale,
-                  label: Text('${locale.flag} ${locale.switcherLabel}'),
+                  // 国旗を上に大きく、言語名を下に小さく。3つとも同じ幅・高さにそろえる
+                  label: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(locale.flag, style: const TextStyle(fontSize: 24, height: 1.1)),
+                      Text(
+                        locale.switcherLabel,
+                        style: const TextStyle(fontSize: 12, height: 1.2),
+                      ),
+                    ],
+                  ),
                 ),
             ],
+            style: const ButtonStyle(
+              minimumSize: WidgetStatePropertyAll(Size(84, 52)),
+              padding: WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+              visualDensity: VisualDensity.standard,
+            ),
             selected: {_locale},
             onSelectionChanged: (selection) {
               setState(() => _locale = selection.first);
