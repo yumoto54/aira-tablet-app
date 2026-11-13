@@ -414,8 +414,8 @@ class _AiraHomePageState extends State<AiraHomePage>
       setState(() {
         _errorMessage = _locale.isJapanese
             ? '音声認識を準備しています。少しだけお待ちください。'
-            : _locale.isChinese
-                ? '語音辨識準備中，請稍等一下再試一次。'
+            : _locale.isSpanish
+                ? 'Estamos preparando el reconocimiento de voz. Espere un momento e inténtelo de nuevo.'
                 : 'Voice recognition is getting ready. Please wait a moment and try again.';
       });
       return;
@@ -529,6 +529,7 @@ class _AiraHomePageState extends State<AiraHomePage>
     if (_completedTurns < _turnsBeforeSurveyInvite) return replyText;
 
     _surveyInviteSpoken = true;
+    if (_strings.surveyInvitation.isEmpty) return replyText;
     return '$replyText ${_strings.surveyInvitation}';
   }
 
@@ -673,8 +674,8 @@ class _AiraHomePageState extends State<AiraHomePage>
         _state = AppState.idle;
         _errorMessage = _locale.isJapanese
             ? '通信がうまくいきませんでした。もう一度お試しください。'
-            : _locale.isChinese
-                ? '連線發生問題，請再試一次。'
+            : _locale.isSpanish
+                ? 'Hubo un problema con la conexión. Inténtelo de nuevo.'
                 : 'Something went wrong with the connection. Please try again.';
       });
       _scheduleAttractTimer();

@@ -13,11 +13,12 @@ enum AppLocale {
     sttLocaleId: 'ja_JP',
     switcherLabel: '日本語',
   ),
-  // 台湾向けの繁体字中国語(標準中国語)。音声認識・音声合成とも zh-TW。
-  zhTw(
-    tag: 'zh-TW',
-    sttLocaleId: 'zh_TW',
-    switcherLabel: '中文',
+  // 米国のスペイン語話者向け(2026-11 LA展示会)。以前の台湾向け繁体字中国語(zh-TW)に置き換えた。
+  // 音声認識・音声合成とも es-US。
+  es(
+    tag: 'es-US',
+    sttLocaleId: 'es_US',
+    switcherLabel: 'ES',
   );
 
   const AppLocale({
@@ -36,5 +37,5 @@ enum AppLocale {
 
   bool get isJapanese => this == AppLocale.ja;
 
-  bool get isChinese => this == AppLocale.zhTw;
+  bool get isSpanish => this == AppLocale.es;
 }

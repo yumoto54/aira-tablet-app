@@ -9,11 +9,11 @@ abstract class AppStrings {
 
   static const AppStrings _ja = _JaStrings();
   static const AppStrings _en = _EnStrings();
-  static const AppStrings _zhTw = _ZhTwStrings();
+  static const AppStrings _es = _EsStrings();
 
   static AppStrings of(AppLocale locale) => switch (locale) {
         AppLocale.ja => _ja,
-        AppLocale.zhTw => _zhTw,
+        AppLocale.es => _es,
         AppLocale.en => _en,
       };
 
@@ -131,17 +131,17 @@ class _JaStrings extends AppStrings {
   const _JaStrings();
 
   @override
-  String get surveyCta => 'アンケートに答えて景品をもらう';
+  String get surveyCta => 'アンケートに答えてクーポンをもらう';
 
   @override
-  String get surveyInvitation => 'ところで、アンケートに答えると景品がもらえますよ。';
+  String get surveyInvitation => '';
 
   @override
   List<String> get attractMessages => const [
         'こんにちは！フリーダムラーメンのアイラです。マイクを押して、気になることを何でも聞いてくださいね。',
-        'ちょっと気になった方、こんにちは！アンケートに答えるとプレゼントがもらえますよ。',
+        'ちょっと気になった方、こんにちは！気になることがあれば、何でも聞いてくださいね。',
         'おいしいラーメンの話、聞いていきませんか？マイクのボタンを押して話しかけてくださいね。',
-        'アンケートに答えるだけで、プレゼントがもらえちゃいます！ぜひ参加してくださいね。',
+        '辛さやフレーバー、買える場所など、気になることは何でも聞いてくださいね！',
       ];
 
   @override
@@ -287,18 +287,17 @@ class _EnStrings extends AppStrings {
   const _EnStrings();
 
   @override
-  String get surveyCta => 'Answer a survey and get a gift';
+  String get surveyCta => 'Answer a survey and get a discount coupon';
 
   @override
-  String get surveyInvitation =>
-      'By the way, if you answer a short survey, you can get a free gift.';
+  String get surveyInvitation => '';
 
   @override
   List<String> get attractMessages => const [
         "Hi there! I'm AIRA from Freedom Ramen. Press the microphone button and ask me anything!",
-        'Come say hello! Answer a quick survey and get a free gift.',
+        'Come say hello! Ask me anything about our ramen.',
         'Curious about our ramen? Press the mic button and I will tell you all about it.',
-        'Just answer a quick survey and get a free giveaway! Come give it a try.',
+        'Curious about the flavors, the spice level, or where to buy? Just ask me!',
       ];
 
   @override
@@ -447,158 +446,159 @@ class _EnStrings extends AppStrings {
   String get close => 'Close';
 }
 
-class _ZhTwStrings extends AppStrings {
-  const _ZhTwStrings();
+class _EsStrings extends AppStrings {
+  const _EsStrings();
 
   @override
-  String get surveyCta => '填問卷，領取贈品';
+  String get surveyCta => 'Responder la encuesta';
 
+  // 2026-11-13: ya no se invita a la encuesta desde la tableta (no hay regalo gratis; el cupón se explica en persona)
   @override
-  String get surveyInvitation => '對了，回答一份簡單的問卷，就可以獲得贈品喔。';
+  String get surveyInvitation => '';
 
   @override
   List<String> get attractMessages => const [
-        '您好！我是 Freedom Ramen 的 AIRA。請按下麥克風按鈕，想知道什麼都可以問我喔！',
-        '路過的朋友，您好！回答一份簡單的問卷，就能獲得贈品喔。',
-        '想知道我們的拉麵有什麼特別嗎？按下麥克風按鈕，我來告訴您。',
-        '只要回答一份簡單的問卷，就能領取贈品！歡迎來試試看。',
+        '¡Hola! Soy AIRA, de Freedom Ramen. Presione el botón del micrófono y pregúnteme lo que quiera.',
+        '¡Hola! ¿Tiene curiosidad por nuestro ramen? Pregúnteme lo que quiera.',
+        '¿Quiere saber qué tiene de especial nuestro ramen? Presione el botón del micrófono y se lo cuento.',
+        '¡Venga a saludar! Pregúnteme por los sabores, el nivel de picante o dónde comprarlo.',
       ];
 
   @override
-  String get voiceRetryPrompt => '不好意思，我沒有聽清楚。可以請您再說一次，慢一點嗎？';
+  String get voiceRetryPrompt => 'Lo siento, no le escuché bien. ¿Podría repetirlo, un poco más despacio?';
 
   @override
-  String get qrCaption => '用手機掃描，就能開啟官方網站';
+  String get qrCaption => 'Escanee con su teléfono para abrir nuestro sitio web oficial';
 
   @override
-  String get mainStatusIdle => '請按下麥克風按鈕，開始說話';
+  String get mainStatusIdle => 'Presione el botón del micrófono para hablar';
 
   @override
-  String get mainStatusListening => '正在聽…說完後請再按一次按鈕';
+  String get mainStatusListening => 'Escuchando… presione el botón otra vez cuando termine';
 
   @override
-  String get mainStatusSending => '已送出。AIRA 正在思考…';
+  String get mainStatusSending => '¡Enviado! AIRA está pensando…';
 
   @override
-  String get mainStatusSpeaking => 'AIRA 正在說話';
+  String get mainStatusSpeaking => 'AIRA está hablando';
 
   @override
-  String get surveyTitle => '問卷調查';
+  String get surveyTitle => 'Encuesta';
 
   @override
-  String stepIndicator(int step, int totalSteps) => '第 $step 步，共 $totalSteps 步';
+  String stepIndicator(int step, int totalSteps) => 'Paso $step de $totalSteps';
 
   @override
-  String get back => '上一步';
+  String get back => 'Atrás';
 
   @override
-  String get next => '下一步';
+  String get next => 'Siguiente';
 
   @override
-  String get submit => '送出';
+  String get submit => 'Enviar';
 
   @override
-  String get submitting => '送出中…';
+  String get submitting => 'Enviando…';
 
   @override
-  String get submitNetworkError => '無法送出。請確認網路連線後，再試一次。';
+  String get submitNetworkError => 'No se pudo enviar. Revise su conexión e inténtelo de nuevo.';
 
   @override
-  String get questionFlavor => '您對哪個口味有興趣？';
+  String get questionFlavor => '¿Qué sabor le llamó la atención?';
 
   @override
-  String get questionSatisfaction => '您會想再買嗎？';
+  String get questionSatisfaction => '¿Le gustaría volver a comprarlo?';
 
   @override
-  String get questionHowHeard => '您是從哪裡得知這個攤位的？';
+  String get questionHowHeard => '¿Cómo se enteró de este stand?';
 
   @override
-  String get questionName => '請問您的大名？';
+  String get questionName => '¿Cómo se llama?';
 
   @override
-  String get questionEmail => '請問您的電子郵件信箱？';
+  String get questionEmail => '¿Cuál es su correo electrónico?';
 
   @override
-  String get emailNote => '只有在您勾選下方選項的情況下，我們才會寄送消息給您。';
+  String get emailNote => 'Solo le enviaremos novedades si marca la casilla de abajo.';
 
   @override
-  String get consentToFollowUp => '我願意收到 AIRA 的優惠與新產品消息（選填）';
+  String get consentToFollowUp => 'Quiero recibir ofertas y novedades de AIRA (opcional)';
 
   @override
-  String get nameFieldHint => '例如：王小明';
+  String get nameFieldHint => 'Ej.: María López';
 
   @override
-  String get emailFieldHint => '例如：name@example.com';
+  String get emailFieldHint => 'Ej.: nombre@ejemplo.com';
 
   @override
-  String get nameRequired => '請輸入您的姓名。';
+  String get nameRequired => 'Escriba su nombre.';
 
   @override
-  String get emailRequired => '請輸入您的電子郵件信箱。';
+  String get emailRequired => 'Escriba su correo electrónico.';
 
   @override
-  String get emailInvalid => '電子郵件格式似乎不正確。';
+  String get emailInvalid => 'El formato del correo electrónico no parece correcto.';
 
   @override
-  String get voiceHint => '可以按按鈕，也可以用說的回答。';
+  String get voiceHint => 'Puede presionar un botón o responder con la voz.';
 
   @override
-  String get voiceAnswerButton => '用說的回答';
+  String get voiceAnswerButton => 'Responder con la voz';
 
   @override
-  String get voiceListening => '正在聽…';
+  String get voiceListening => 'Escuchando…';
 
   @override
-  String get voiceStop => '停止';
+  String get voiceStop => 'Detener';
 
   @override
-  String get voiceNoMatch => '不好意思，我沒有聽清楚。請改用按鈕選擇。';
+  String get voiceNoMatch => 'No le escuché bien. Por favor, use los botones.';
 
   @override
-  String get voiceUnavailable => '無法使用麥克風。請改用按鈕選擇。';
+  String get voiceUnavailable => 'No se puede usar el micrófono. Por favor, use los botones.';
 
   @override
-  String get voiceFillName => '語音輸入';
+  String get voiceFillName => 'Dictar';
 
   @override
   List<String> get satisfactionLabels => const [
-        '完全不會',
-        '大概不會',
-        '不確定',
-        '會',
-        '一定會',
+        'Para nada',
+        'Probablemente no',
+        'No estoy seguro',
+        'Sí',
+        'Definitivamente',
       ];
 
   @override
-  String get flavorSpicyMiso => '辣味噌 Spicy Miso';
+  String get flavorSpicyMiso => 'Spicy Miso';
 
   @override
-  String get flavorJapaneseCurry => '日式咖哩 Japanese Curry';
+  String get flavorJapaneseCurry => 'Japanese Curry';
 
   @override
-  String get flavorSeafood => '海鮮 Seafood';
+  String get flavorSeafood => 'Seafood';
 
   @override
-  String get flavorUndecided => '還沒決定';
+  String get flavorUndecided => 'Aún no lo sé';
 
   @override
-  String get howHeardSns => '社群媒體';
+  String get howHeardSns => 'Redes sociales';
 
   @override
-  String get howHeardReferral => '朋友介紹';
+  String get howHeardReferral => 'Un amigo me lo recomendó';
 
   @override
-  String get howHeardWalkedBy => '剛好路過';
+  String get howHeardWalkedBy => 'Pasaba por aquí';
 
   @override
-  String get howHeardOther => '其他';
+  String get howHeardOther => 'Otro';
 
   @override
-  String get completionTitle => '謝謝您！';
+  String get completionTitle => '¡Gracias!';
 
   @override
-  String get completionShowStaff => '請將這個代碼出示給工作人員';
+  String get completionShowStaff => 'Muestre este código a un miembro del personal';
 
   @override
-  String get close => '關閉';
+  String get close => 'Cerrar';
 }
