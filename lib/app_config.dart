@@ -13,6 +13,9 @@ const String kDeviceId =
 /// ダッシュボードに表示するアプリの版。アプリを更新したら上げる。
 const String kAppVersion = '0.4.1';
 
+/// サーバーに新しい音声パックが無いか確認する間隔(会話中でないときだけ確認する)。
+const Duration kVoicePackSyncInterval = Duration(minutes: 30);
+
 /// 稼働状況を送る間隔。
 const Duration kHeartbeatInterval = Duration(seconds: 60);
 

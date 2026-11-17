@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Directory;
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -16,6 +18,7 @@ import 'monitoring/network_status.dart';
 import 'net/retrying_post.dart';
 import 'survey/survey_flow_page.dart';
 import 'voicepack/voice_pack.dart';
+import 'voicepack/voice_pack_sync.dart';
 import 'widgets/expo_ai_logo.dart';
 
 void main() {
@@ -110,6 +113,10 @@ class _AiraHomePageState extends State<AiraHomePage>
   static const int _maxListenRestarts = 6;
   Timer? _mouthCueTimer;
 
+  Directory? _voicePackDir;
+  Timer? _voicePackSyncTimer;
+  bool _syncingVoicePack = false;
+
   /// マイクボタンの「聞いています」リングを脈打たせるためのアニメーション。
   /// 録音中かどうかに関わらず回し続け、表示側(AnimatedBuilder)で
   /// 録音中だけリングを見せる。開始/停止の分岐を持たない分、単純にしている。
@@ -187,7 +194,9 @@ class _AiraHomePageState extends State<AiraHomePage>
     DeviceMonitor.instance.start();
     _initSpeech();
     // 同梱の音声パックの目録を先に読んでおく(最初の返答から即再生できるように)。
-    unawaited(VoicePack.instance.load());
+    DeviceMonitor.instance.voicePackVersionProvider =
+        () => VoicePack.instance.versionLabel;
+    unawaited(_initVoicePack());
     _scheduleNextBlink();
     _scheduleAttractTimer();
     // 会話中に口の形が切り替わるたびに初回デコードが走ると、そこだけ
@@ -254,10 +263,53 @@ class _AiraHomePageState extends State<AiraHomePage>
     _blinkTimer?.cancel();
     _attractTimer?.cancel();
     _qrTimer?.cancel();
+    _voicePackSyncTimer?.cancel();
     _pulseController.dispose();
     _audioPlayer.dispose();
     DeviceMonitor.instance.stop();
     super.dispose();
+  }
+
+  /// 同梱の音声パックと、サーバーから受け取った音声パックを使える状態にする。
+  /// 前回までに受け取った分はすぐ使い、新しいものがないか確認する(以後は定期的に確認)。
+  Future<void> _initVoicePack() async {
+    await VoicePack.instance.load();
+    try {
+      final base = await getApplicationSupportDirectory();
+      final dir = Directory('${base.path}/voicepack');
+      _voicePackDir = dir;
+      await VoicePack.instance.attachRemote(dir);
+      unawaited(_syncVoicePack());
+      _voicePackSyncTimer = Timer.periodic(
+        kVoicePackSyncInterval,
+        (_) => unawaited(_syncVoicePack()),
+      );
+    } catch (e) {
+      // 受け取りの準備に失敗しても、同梱の音声と従来のサーバー生成で動く。
+      DeviceMonitor.instance.recordApiFailure('voicepack init: $e');
+    }
+  }
+
+  /// サーバーに新しい音声パックがあれば受け取る。会話中は通信を避けて次回に回す。
+  Future<void> _syncVoicePack() async {
+    final dir = _voicePackDir;
+    if (dir == null || _syncingVoicePack || _state != AppState.idle) return;
+    _syncingVoicePack = true;
+    try {
+      final result = await VoicePackSync(
+        dir: dir,
+        baseUrl: kApiBaseUrl,
+        headers: {
+          'x-functions-key': kApiFunctionKey,
+          if (kTenantId.isNotEmpty) 'x-tenant-id': kTenantId,
+        },
+      ).sync();
+      if (result == VoicePackSyncResult.updated) {
+        await VoicePack.instance.attachRemote(dir);
+      }
+    } finally {
+      _syncingVoicePack = false;
+    }
   }
 
   /// 音声認識の準備。起動直後は端末側の音声認識がまだ立ち上がっておらず、

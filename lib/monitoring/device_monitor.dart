@@ -27,6 +27,9 @@ class DeviceMonitor {
   /// 画面側が登録する。状態の変更箇所ごとに通知を足さずに済むようにしている。
   String Function()? stateProvider;
 
+  /// 端末が持っている音声パックの版を返す関数(ダッシュボードに出す)。無ければ null を返す。
+  String? Function()? voicePackVersionProvider;
+
   int _sttFailures = 0;
   int _apiFailures = 0;
   String? _lastError;
@@ -46,6 +49,7 @@ class DeviceMonitor {
     _timer?.cancel();
     _timer = null;
     stateProvider = null;
+    voicePackVersionProvider = null;
   }
 
   void recordSttFailure(String message) {
@@ -107,6 +111,7 @@ class DeviceMonitor {
     return {
       'deviceId': kDeviceId,
       'appVersion': kAppVersion,
+      'voicePackVersion': voicePackVersionProvider?.call(),
       'appState': stateProvider?.call(),
       'batteryLevel': batteryLevel,
       'charging': charging,
