@@ -1,0 +1,23 @@
+# 自動チェック: GitHubに上げる(push)たびと、PRのたびに、解析とテストを走らせる。
+# アプリのビルド(APK作成)・配布は行わない。api_secrets.dart は秘密情報でgit管理外なので、
+# テンプレート(api_secrets.example.dart)をコピーして、ダミー値でチェックする。
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dummy secrets for analysis
+        run: cp lib/api_secrets.example.dart lib/api_secrets.dart
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
