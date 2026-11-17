@@ -93,6 +93,21 @@ class _AiraHomePageState extends State<AiraHomePage>
   String _errorMessage = '';
 
   bool _speechAvailable = false;
+
+  /// 聞き取りが話の途中でエンジン側に切られたとき、それまでに認識できた文を持ち越すための置き場。
+  String _carryText = '';
+  DateTime _listenStartedAt = DateTime.now();
+  DateTime _lastWordsAt = DateTime.now();
+  int _listenRestarts = 0;
+
+  /// 1回の「話しかける」の最長時間。ボタンで終わるのが基本だが、押し忘れても止まるようにする。
+  static const Duration _maxListenTotal = Duration(seconds: 30);
+
+  /// 新しい言葉が出ないまま、この時間たったら「話し終わった」とみなして送信する。
+  static const Duration _silenceToFinish = Duration(seconds: 6);
+
+  /// エンジンに切られても聞き直す回数の上限(暴走防止)。
+  static const int _maxListenRestarts = 6;
   Timer? _mouthCueTimer;
 
   /// マイクボタンの「聞いています」リングを脈打たせるためのアニメーション。
@@ -262,7 +277,7 @@ class _AiraHomePageState extends State<AiraHomePage>
           // error_no_match / error_speech_timeout は「何も聞き取れなかった」とき。
           // ここで終わらせないと、赤いマイクのまま十数秒固まったように見える。
           if (_state == AppState.recording) {
-            unawaited(_finishListen(userStopped: false));
+            unawaited(_onEngineEnded());
             return;
           }
           DeviceMonitor.instance.recordSttFailure(error.errorMsg);
@@ -279,7 +294,7 @@ class _AiraHomePageState extends State<AiraHomePage>
           if (!_heardListeningStatus) return;
           if (status == stt.SpeechToText.notListeningStatus ||
               status == stt.SpeechToText.doneStatus) {
-            unawaited(_finishListen(userStopped: false));
+            unawaited(_onEngineEnded());
           }
         },
       );
@@ -451,25 +466,70 @@ class _AiraHomePageState extends State<AiraHomePage>
       _errorMessage = '';
       _heardListeningStatus = false;
     });
+    _carryText = '';
+    _listenRestarts = 0;
+    _listenStartedAt = DateTime.now();
+    _lastWordsAt = DateTime.now();
 
+    await _listenOnce();
+  }
+
+  Future<void> _listenOnce() async {
     await _speech.listen(
       onResult: (result) {
+        if (result.recognizedWords.isNotEmpty) _lastWordsAt = DateTime.now();
         setState(() {
-          _recognizedText = result.recognizedWords;
+          if (_carryText.isEmpty) {
+            _recognizedText = result.recognizedWords;
+          } else if (result.recognizedWords.isEmpty) {
+            _recognizedText = _carryText;
+          } else {
+            final sep = _locale.isJapanese ? '' : ' ';
+            _recognizedText = '$_carryText$sep${result.recognizedWords}';
+          }
         });
       },
       listenOptions: stt.SpeechListenOptions(
         localeId: _locale.sttLocaleId,
-        // 無音が続いたらこちらから切る。指定しないと Android 側の
-        // タイムアウト(十秒前後)まで赤いマイクのまま待たされる。
-        // ただし2秒だと「押してから話し始めるまでの間」にも引っかかり、
-        // 何もしゃべっていないのに即座に「聞き取れませんでした」になって
-        // しまっていたため、話し始めの間も見込んで余裕を持たせる。
-        pauseFor: const Duration(seconds: 5),
-        listenFor: const Duration(seconds: 12),
+        // 「話し終わったらボタンを押す」が基本の操作。押す前にこちらから切ると、
+        // 押したときにはもう送信済みで反応しなくなる。無音で切る時間は長めにとり、
+        // エンジン側に先に切られた場合は _onEngineEnded で聞き直す。
+        pauseFor: const Duration(seconds: 8),
+        listenFor: _maxListenTotal,
         cancelOnError: true,
       ),
     );
+  }
+
+  /// 聞き取りエンジンの側が先に終わったとき(無音の判定・時間切れ・エラー)。
+  ///
+  /// 認識できた文があり、まだ話している最中とみなせるなら、切らずに聞き直して
+  /// 続きをつなげる(ボタンを押すまで待つ)。新しい言葉が一定時間なければ、
+  /// 話し終わったとみなして送信する。何も認識できていなければ従来どおり終える。
+  Future<void> _onEngineEnded() async {
+    if (_state != AppState.recording || _finishingListen) return;
+
+    final now = DateTime.now();
+    final canContinue = _recognizedText.isNotEmpty &&
+        _listenRestarts < _maxListenRestarts &&
+        now.difference(_listenStartedAt) < _maxListenTotal &&
+        now.difference(_lastWordsAt) < _silenceToFinish;
+
+    if (canContinue) {
+      _listenRestarts++;
+      _carryText = _recognizedText;
+      _heardListeningStatus = false;
+      try {
+        // 直前の聞き取りが完全に止まるのを少し待つ。
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        if (_state != AppState.recording || _finishingListen) return;
+        await _listenOnce();
+        return;
+      } catch (_) {
+        // 聞き直せなかったときは、ここまでの認識結果で終える。
+      }
+    }
+    await _finishListen(userStopped: false);
   }
 
   /// 聞き取りを終えて、結果があれば会話へ、なければすぐマイクを戻す。
