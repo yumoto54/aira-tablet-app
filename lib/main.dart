@@ -15,6 +15,7 @@ import 'monitoring/device_monitor.dart';
 import 'monitoring/network_status.dart';
 import 'net/retrying_post.dart';
 import 'survey/survey_flow_page.dart';
+import 'voicepack/voice_pack.dart';
 import 'widgets/expo_ai_logo.dart';
 
 void main() {
@@ -170,6 +171,8 @@ class _AiraHomePageState extends State<AiraHomePage>
     DeviceMonitor.instance.stateProvider = () => _state.name;
     DeviceMonitor.instance.start();
     _initSpeech();
+    // 同梱の音声パックの目録を先に読んでおく(最初の返答から即再生できるように)。
+    unawaited(VoicePack.instance.load());
     _scheduleNextBlink();
     _scheduleAttractTimer();
     // 会話中に口の形が切り替わるたびに初回デコードが走ると、そこだけ
@@ -356,6 +359,21 @@ class _AiraHomePageState extends State<AiraHomePage>
     Duration timeout = const Duration(seconds: 8),
   }) async {
     try {
+      // 同梱の音声があれば、サーバーに作らせずにすぐ再生する(通信も待たない)。
+      final packed = await VoicePack.instance.lookup(_locale.tag, text);
+      if (packed != null) {
+        if (!mounted) return false;
+        if (shouldContinue != null && !shouldContinue()) return false;
+        setState(() {
+          _airaReplyText = text;
+        });
+        await _playBytesWithMouthSync(
+          packed.audioBytes,
+          _smoothMouthCues(_parseMouthCues(packed.mouthCuesJson)),
+        );
+        return true;
+      }
+
       final speakResponse = await retryingPost(
             Uri.parse('$kApiBaseUrl/api/speak'),
             headers: {
@@ -641,6 +659,16 @@ class _AiraHomePageState extends State<AiraHomePage>
         _airaReplyText = spokenText;
       });
 
+      // 同梱の音声があれば、サーバーに作らせずにすぐ再生する。
+      final packed = await VoicePack.instance.lookup(_locale.tag, spokenText);
+      if (packed != null) {
+        await _playBytesWithMouthSync(
+          packed.audioBytes,
+          _smoothMouthCues(_parseMouthCues(packed.mouthCuesJson)),
+        );
+        return;
+      }
+
       final speakResponse = await retryingPost(
             Uri.parse('$kApiBaseUrl/api/speak'),
             headers: {
@@ -703,8 +731,18 @@ class _AiraHomePageState extends State<AiraHomePage>
     return result;
   }
 
+  List<MouthCue> _parseMouthCues(List<dynamic> json) => json
+      .map((e) => MouthCue.fromJson(e as Map<String, dynamic>))
+      .toList();
+
   Future<void> _playAudioWithMouthSync(
     String audioBase64,
+    List<MouthCue> mouthCues,
+  ) =>
+      _playBytesWithMouthSync(base64Decode(audioBase64), mouthCues);
+
+  Future<void> _playBytesWithMouthSync(
+    Uint8List audioBytes,
     List<MouthCue> mouthCues,
   ) async {
     setState(() {
@@ -713,7 +751,6 @@ class _AiraHomePageState extends State<AiraHomePage>
     });
 
     try {
-      final audioBytes = base64Decode(audioBase64);
       await _audioPlayer.setAudioSource(
         _Base64AudioSource(audioBytes),
       );
