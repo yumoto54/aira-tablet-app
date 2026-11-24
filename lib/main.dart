@@ -16,6 +16,7 @@ import 'l10n/app_strings.dart';
 import 'monitoring/device_monitor.dart';
 import 'monitoring/network_status.dart';
 import 'net/retrying_post.dart';
+import 'game/slot_game_page.dart';
 import 'survey/survey_flow_page.dart';
 import 'voicepack/voice_pack.dart';
 import 'voicepack/voice_pack_sync.dart';
@@ -499,6 +500,8 @@ class _AiraHomePageState extends State<AiraHomePage>
       setState(() {
         _errorMessage = _locale.isJapanese
             ? '音声認識を準備しています。少しだけお待ちください。'
+            : _locale.isMalay
+                ? 'Pengecaman suara sedang disediakan. Sila tunggu sebentar dan cuba lagi.'
             : _locale.isSpanish
                 ? 'Estamos preparando el reconocimiento de voz. Espere un momento e inténtelo de nuevo.'
                 : 'Voice recognition is getting ready. Please wait a moment and try again.';
@@ -814,6 +817,8 @@ class _AiraHomePageState extends State<AiraHomePage>
         _state = AppState.idle;
         _errorMessage = _locale.isJapanese
             ? '通信がうまくいきませんでした。もう一度お試しください。'
+            : _locale.isMalay
+                ? 'Ada masalah dengan sambungan. Sila cuba lagi.'
             : _locale.isSpanish
                 ? 'Hubo un problema con la conexión. Inténtelo de nuevo.'
                 : 'Something went wrong with the connection. Please try again.';
@@ -941,6 +946,28 @@ class _AiraHomePageState extends State<AiraHomePage>
     );
 
     // アンケート画面から戻ってきたら、再びアイドル検知を始める。
+    if (mounted) {
+      _scheduleAttractTimer();
+    }
+  }
+
+  Future<void> _openGame() async {
+    // アンケートと同じく、画面を離れる前に読み上げと聞き取りを止める
+    _mouthCueTimer?.cancel();
+    await _audioPlayer.stop();
+    if (_speech.isListening) {
+      await _speech.cancel();
+    }
+    _attractTimer?.cancel();
+    _isAttractSpeech = false;
+    if (!mounted) return;
+    setState(() {
+      _state = AppState.idle;
+      _currentMouthShape = 'neutral';
+    });
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => SlotGamePage(locale: _locale)),
+    );
     if (mounted) {
       _scheduleAttractTimer();
     }
@@ -1142,6 +1169,14 @@ class _AiraHomePageState extends State<AiraHomePage>
             onPressed: _toggleAvatarStyle,
           ),
           const SizedBox(width: 16),
+          if (kGameEnabled) ...[
+            FilledButton.icon(
+              onPressed: _openGame,
+              icon: const Icon(Icons.casino),
+              label: Text(_strings.gameCta),
+            ),
+            const SizedBox(width: 16),
+          ],
           FilledButton.icon(
             onPressed: _openSurvey,
             icon: const Icon(Icons.card_giftcard),

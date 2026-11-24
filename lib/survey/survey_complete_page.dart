@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../app_config.dart';
+import '../game/slot_game_page.dart';
 import '../l10n/app_locale.dart';
 import '../l10n/app_strings.dart';
 
@@ -74,6 +76,18 @@ class SurveyCompletePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 48),
+                if (kGameEnabled) ...[
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => SlotGamePage(locale: locale),
+                      ),
+                    ),
+                    icon: const Icon(Icons.casino),
+                    label: Text(strings.gameCta),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: FilledButton.styleFrom(

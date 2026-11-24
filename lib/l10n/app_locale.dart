@@ -22,6 +22,13 @@ enum AppLocale {
     sttLocaleId: 'es_US',
     switcherLabel: 'ES',
     flag: '🇪🇸',
+  ),
+  // マレーシア向け(2026-11 マリオンクレープのデモ機)。音声認識・音声合成とも ms-MY。
+  ms(
+    tag: 'ms-MY',
+    sttLocaleId: 'ms_MY',
+    switcherLabel: 'MS',
+    flag: '🇲🇾',
   );
 
   const AppLocale({
@@ -45,4 +52,6 @@ enum AppLocale {
   bool get isJapanese => this == AppLocale.ja;
 
   bool get isSpanish => this == AppLocale.es;
+
+  bool get isMalay => this == AppLocale.ms;
 }

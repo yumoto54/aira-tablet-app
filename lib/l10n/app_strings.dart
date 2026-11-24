@@ -10,12 +10,30 @@ abstract class AppStrings {
   static const AppStrings _ja = _JaStrings();
   static const AppStrings _en = _EnStrings();
   static const AppStrings _es = _EsStrings();
+  static const AppStrings _ms = _MsStrings();
 
   static AppStrings of(AppLocale locale) => switch (locale) {
         AppLocale.ja => _ja,
         AppLocale.es => _es,
+        AppLocale.ms => _ms,
         AppLocale.en => _en,
       };
+
+  // --- スロットゲーム(来場者向けインセンティブ) ---
+  // 言語ごとの上書きがない言語は英語で表示される。
+
+  String get gameCta => 'Play & win a coupon!';
+  String get gameTitle => 'Slot Game';
+  String get gameSpin => 'SPIN';
+  String get gameSpinning => 'Good luck...';
+  String get gameJackpot => 'JACKPOT!';
+  String get gameSmall => 'Nice! You won!';
+  String get gameMiss => 'So close! Try again!';
+  String get gameShowStaff => 'Show this code to our staff to get your prize';
+  String gameExpires(String date) => 'Valid until $date';
+  String gamePlaysLeft(int n) => '$n play(s) left today';
+  String get gameLimit => "That's all for today. Please come back tomorrow!";
+  String get gameError => 'Something went wrong. Please try again.';
 
   // --- メイン画面 ---
 
@@ -129,6 +147,31 @@ abstract class AppStrings {
 
 class _JaStrings extends AppStrings {
   const _JaStrings();
+
+  @override
+  String get gameCta => 'ゲームでクーポンをゲット!';
+  @override
+  String get gameTitle => 'スロットゲーム';
+  @override
+  String get gameSpin => 'スタート';
+  @override
+  String get gameSpinning => '運だめし中…';
+  @override
+  String get gameJackpot => '大当たり!';
+  @override
+  String get gameSmall => 'やったね!当たり!';
+  @override
+  String get gameMiss => '惜しい!もう一回!';
+  @override
+  String get gameShowStaff => 'このコードをスタッフに見せて、賞品を受け取ってください';
+  @override
+  String gameExpires(String date) => '$dateまで有効';
+  @override
+  String gamePlaysLeft(int n) => '今日はあと$n回';
+  @override
+  String get gameLimit => '今日の挑戦はここまでです。また明日お越しください!';
+  @override
+  String get gameError => '通信がうまくいきませんでした。もう一度お試しください。';
 
   @override
   String get surveyCta => 'アンケートに答えてクーポンをもらう';
@@ -450,6 +493,31 @@ class _EsStrings extends AppStrings {
   const _EsStrings();
 
   @override
+  String get gameCta => '¡Juega y gana un cupón!';
+  @override
+  String get gameTitle => 'Juego de tragamonedas';
+  @override
+  String get gameSpin => 'GIRAR';
+  @override
+  String get gameSpinning => 'Buena suerte...';
+  @override
+  String get gameJackpot => '¡PREMIO MAYOR!';
+  @override
+  String get gameSmall => '¡Ganaste!';
+  @override
+  String get gameMiss => '¡Casi! ¡Inténtalo otra vez!';
+  @override
+  String get gameShowStaff => 'Muestre este código a nuestro personal para recibir su premio';
+  @override
+  String gameExpires(String date) => 'Válido hasta $date';
+  @override
+  String gamePlaysLeft(int n) => 'Le quedan $n intento(s) hoy';
+  @override
+  String get gameLimit => 'Eso es todo por hoy. ¡Vuelva mañana!';
+  @override
+  String get gameError => 'Hubo un problema. Inténtelo de nuevo.';
+
+  @override
   String get surveyCta => 'Responder la encuesta';
 
   // 2026-11-13: ya no se invita a la encuesta desde la tableta (no hay regalo gratis; el cupón se explica en persona)
@@ -601,4 +669,76 @@ class _EsStrings extends AppStrings {
 
   @override
   String get close => 'Cerrar';
+}
+
+/// マレー語(マレーシア)。2026-11 マリオンクレープのデモ機用。
+/// 英語版を土台に、来場者が目にする主な文言だけをマレー語にしている。
+/// 訳はClaudeによるもので、ネイティブの確認は未実施。
+/// ここに無い文言は英語で表示される(足りないものは随時追加する)。
+class _MsStrings extends _EnStrings {
+  const _MsStrings();
+
+  @override
+  String get surveyCta => 'Jawab soal selidik dan dapatkan kupon';
+  @override
+  String get surveyInvitation => '';
+  @override
+  List<String> get attractMessages => const [
+        'Hai! Saya AIRA. Tekan butang mikrofon dan tanya saya apa sahaja tentang krep kami!',
+        'Jom bersembang! Tanya saya tentang menu, harga atau waktu operasi.',
+        'Bercakap dengan saya dan menangi kupon di permainan slot!',
+      ];
+  @override
+  String get voiceRetryPrompt => 'Maaf, saya tidak dengar. Boleh sebut sekali lagi?';
+  @override
+  String get qrCaption => 'Imbas kod QR untuk maklumat lanjut';
+  @override
+  String get mainStatusIdle => 'Tekan mikrofon dan bercakap';
+  @override
+  String get mainStatusListening => 'Sedang mendengar...';
+  @override
+  String get mainStatusSending => 'Sedang berfikir...';
+  @override
+  String get mainStatusSpeaking => 'AIRA sedang bercakap';
+  @override
+  String get surveyTitle => 'Soal selidik';
+  @override
+  String get back => 'Kembali';
+  @override
+  String get next => 'Seterusnya';
+  @override
+  String get submit => 'Hantar';
+  @override
+  String get submitting => 'Menghantar...';
+  @override
+  String get completionTitle => 'Terima kasih!';
+  @override
+  String get completionShowStaff => 'Sila tunjukkan kod ini kepada kakitangan kami';
+  @override
+  String get close => 'Tutup';
+
+  @override
+  String get gameCta => 'Main & menang kupon!';
+  @override
+  String get gameTitle => 'Permainan Slot';
+  @override
+  String get gameSpin => 'PUTAR';
+  @override
+  String get gameSpinning => 'Semoga bertuah...';
+  @override
+  String get gameJackpot => 'JACKPOT!';
+  @override
+  String get gameSmall => 'Tahniah! Anda menang!';
+  @override
+  String get gameMiss => 'Hampir! Cuba lagi!';
+  @override
+  String get gameShowStaff => 'Tunjukkan kod ini kepada kakitangan untuk menuntut hadiah anda';
+  @override
+  String gameExpires(String date) => 'Sah sehingga $date';
+  @override
+  String gamePlaysLeft(int n) => '$n percubaan lagi hari ini';
+  @override
+  String get gameLimit => 'Itu sahaja untuk hari ini. Datang lagi esok!';
+  @override
+  String get gameError => 'Maaf, ada masalah. Sila cuba lagi.';
 }

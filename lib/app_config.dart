@@ -58,3 +58,8 @@ String toggledAvatarStyle(String style) => switch (style) {
 bool isAnimeAvatarStyle(String style) => style == 'anime' || style == 'male_anime';
 
 String get kAvatarAssetDir => avatarAssetDirFor(kAvatarStyle);
+
+/// スロットゲーム(来場者向けのクーポン抽選)の導線を出すか。
+/// ビルド時に指定する: --dart-define=GAME_ENABLED=true
+/// サーバー側のテナント設定(管理画面の「スロットゲーム」)も有効になっている必要がある。
+const bool kGameEnabled = bool.fromEnvironment('GAME_ENABLED');
