@@ -63,3 +63,10 @@ String get kAvatarAssetDir => avatarAssetDirFor(kAvatarStyle);
 /// ビルド時に指定する: --dart-define=GAME_ENABLED=true
 /// サーバー側のテナント設定(管理画面の「スロットゲーム」)も有効になっている必要がある。
 const bool kGameEnabled = bool.fromEnvironment('GAME_ENABLED');
+
+/// 人数センサー(AIカメラ)の「近づいた」を受けて、AIRAから声をかけるか。
+/// ビルド時に指定する: --dart-define=SENSOR_ENABLED=true
+const bool kSensorEnabled = bool.fromEnvironment('SENSOR_ENABLED');
+
+/// 同じ場所での声かけの最小間隔(秒)。しつこくならないよう、最初は長めにしている。
+const int kGreetCooldownSeconds = int.fromEnvironment('GREET_COOLDOWN_SECONDS', defaultValue: 60);

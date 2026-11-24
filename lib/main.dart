@@ -17,6 +17,7 @@ import 'monitoring/device_monitor.dart';
 import 'monitoring/network_status.dart';
 import 'net/retrying_post.dart';
 import 'game/slot_game_page.dart';
+import 'sensor/approach_watcher.dart';
 import 'survey/survey_flow_page.dart';
 import 'voicepack/voice_pack.dart';
 import 'voicepack/voice_pack_sync.dart';
@@ -167,6 +168,8 @@ class _AiraHomePageState extends State<AiraHomePage>
   static const Duration _attractIdleDelay = Duration(seconds: 35);
 
   Timer? _attractTimer;
+  ApproachWatcher? _approachWatcher;
+  DateTime? _lastGreetAt;
 
   /// 今再生している発話が、ユーザーとの会話(通常ターン)ではなく
   /// アトラクトモードの呼び込みかどうか。会話ターン数のカウントや
@@ -200,6 +203,9 @@ class _AiraHomePageState extends State<AiraHomePage>
     unawaited(_initVoicePack());
     _scheduleNextBlink();
     _scheduleAttractTimer();
+    if (kSensorEnabled) {
+      _approachWatcher = ApproachWatcher(onApproach: _greetApproachingVisitor)..start();
+    }
     // 会話中に口の形が切り替わるたびに初回デコードが走ると、そこだけ
     // カクつく(特に非力な端末では顕著)。起動時に全アバター画像を
     // 一度デコードしてキャッシュしておくことで、本番中のジャンクを避ける。
@@ -263,6 +269,7 @@ class _AiraHomePageState extends State<AiraHomePage>
     _mouthCueTimer?.cancel();
     _blinkTimer?.cancel();
     _attractTimer?.cancel();
+    _approachWatcher?.stop();
     _qrTimer?.cancel();
     _voicePackSyncTimer?.cancel();
     _pulseController.dispose();
@@ -378,6 +385,18 @@ class _AiraHomePageState extends State<AiraHomePage>
   void _scheduleAttractTimer() {
     _attractTimer?.cancel();
     _attractTimer = Timer(_attractIdleDelay, _playAttractMessage);
+  }
+
+  /// 人数センサーが「近づいた人がいる」と知らせたときに、AIRAから声をかける。
+  /// 会話中・聞き取り中・読み上げ中は話しかけない。前回の声かけから
+  /// kGreetCooldownSeconds 秒たつまでは、何度知らせが来ても声をかけない(しつこさ防止)。
+  void _greetApproachingVisitor() {
+    if (!mounted || _state != AppState.idle) return;
+    final last = _lastGreetAt;
+    if (last != null && DateTime.now().difference(last).inSeconds < kGreetCooldownSeconds) return;
+    _lastGreetAt = DateTime.now();
+    _attractTimer?.cancel();
+    unawaited(_playAttractMessage());
   }
 
   /// 誰も話しかけていない状態が続いたときに、AIRAから自分で声をかけて
