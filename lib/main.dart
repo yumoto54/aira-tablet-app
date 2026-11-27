@@ -1152,7 +1152,8 @@ class _AiraHomePageState extends State<AiraHomePage>
         actions: [
           SegmentedButton<AppLocale>(
             segments: [
-              for (final locale in AppLocale.values)
+              // マリオン(マレーシア)のデモ機では、FAQの無いスペイン語は出さない
+              for (final locale in AppLocale.values.where((l) => !(kBrand == 'marion' && l == AppLocale.es)))
                 ButtonSegment<AppLocale>(
                   value: locale,
                   // 国旗を上に大きく、言語名を下に小さく。3つとも同じ幅・高さにそろえる
