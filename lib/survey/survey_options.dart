@@ -8,16 +8,32 @@ enum FlavorChoice {
   spicyMiso('Spicy Miso'),
   japaneseCurry('Japanese Curry'),
   seafood('Seafood'),
+  // マリオンクレープ用(ビルド時 BRAND=marion のときだけ画面に出す)
+  nutella('Nutella'),
+  strawberryCream('Strawberry Cream'),
+  custard('Custard'),
+  houjicha('Houji-cha'),
+  savory('Savory'),
   undecided('Undecided');
 
   const FlavorChoice(this.apiValue);
 
   final String apiValue;
 
+  /// ブランドごとに画面に出す選択肢。既定(未指定)は従来のフリーダムラーメン。
+  static List<FlavorChoice> forBrand(String brand) => brand == 'marion'
+      ? const [nutella, strawberryCream, custard, houjicha, savory, undecided]
+      : const [spicyMiso, japaneseCurry, seafood, undecided];
+
   String label(AppStrings strings) => switch (this) {
         FlavorChoice.spicyMiso => strings.flavorSpicyMiso,
         FlavorChoice.japaneseCurry => strings.flavorJapaneseCurry,
         FlavorChoice.seafood => strings.flavorSeafood,
+        FlavorChoice.nutella => strings.flavorNutella,
+        FlavorChoice.strawberryCream => strings.flavorStrawberryCream,
+        FlavorChoice.custard => strings.flavorCustard,
+        FlavorChoice.houjicha => strings.flavorHoujicha,
+        FlavorChoice.savory => strings.flavorSavory,
         FlavorChoice.undecided => strings.flavorUndecided,
       };
 }
@@ -71,6 +87,38 @@ const Map<FlavorChoice, List<String>> kFlavorVoiceKeywords = {
     '海鮮',
     'かいせん',
     '海鲜',
+  ],
+  FlavorChoice.nutella: ['nutella', 'ヌテラ', 'ヌッテラ', 'nutela'],
+  FlavorChoice.strawberryCream: [
+    'strawberry',
+    'strawberi',
+    'いちご',
+    'イチゴ',
+    '苺',
+    'ストロベリー',
+  ],
+  FlavorChoice.custard: ['custard', 'カスタード', 'kastard', 'kastad'],
+  FlavorChoice.houjicha: [
+    'houji',
+    'hoji',
+    'houjicha',
+    'ほうじ',
+    'ホウジ',
+    'ほうじ茶',
+    'teh',
+  ],
+  FlavorChoice.savory: [
+    'savory',
+    'savoury',
+    'tuna',
+    'chicken',
+    'okonomiyaki',
+    'ツナ',
+    'チキン',
+    'お好み焼き',
+    'お食事',
+    'masin',
+    'ayam',
   ],
   FlavorChoice.undecided: [
     'not decided',

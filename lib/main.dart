@@ -414,8 +414,8 @@ class _AiraHomePageState extends State<AiraHomePage>
       return;
     }
 
-    final message =
-        _strings.attractMessages[_random.nextInt(_strings.attractMessages.length)];
+    final messages = kBrand == 'marion' ? _strings.attractMessagesMarion : _strings.attractMessages;
+    final message = messages[_random.nextInt(messages.length)];
 
     _isAttractSpeech = true;
     final spoke = await _speakText(

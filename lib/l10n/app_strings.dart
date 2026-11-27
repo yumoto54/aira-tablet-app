@@ -19,6 +19,24 @@ abstract class AppStrings {
         AppLocale.en => _en,
       };
 
+  /// マリオンクレープ用の呼び込み(ビルド時に --dart-define=BRAND=marion を指定したとき使う)。
+  /// 言語ごとの上書きがない言語は英語。サーバー側のFAQにも同じ文を入れておくと、
+  /// 音声があらかじめ作られてタブレットに保存される(faq.marion-crepe.json の attract_*)。
+  List<String> get attractMessagesMarion => const [
+        "Hi there! I'm AIRA. Welcome to Marion Crêpe, a Japanese crêpe brand loved since 1976! Press the microphone button and ask me anything!",
+        'Come say hello! Our crêpe mix comes straight from Japan, and every crêpe is made fresh to order. Ask me about our menu!',
+        'Chat with me and play the slot game to win a coupon!',
+      ];
+
+  // --- マリオンクレープ用のアンケート選択肢 ---
+  // 商品名はどの言語でもそのまま通じるので、英語を既定にして必要な言語だけ上書きする。
+
+  String get flavorNutella => 'Nutella';
+  String get flavorStrawberryCream => 'Strawberry Cream';
+  String get flavorCustard => 'Custard';
+  String get flavorHoujicha => 'Houji-cha (roasted green tea)';
+  String get flavorSavory => 'Savory (Tuna, Chicken, Okonomiyaki)';
+
   // --- スロットゲーム(来場者向けインセンティブ) ---
   // 言語ごとの上書きがない言語は英語で表示される。
 
@@ -172,6 +190,22 @@ class _JaStrings extends AppStrings {
   String get gameLimit => '今日の挑戦はここまでです。また明日お越しください!';
   @override
   String get gameError => '通信がうまくいきませんでした。もう一度お試しください。';
+
+  @override
+  List<String> get attractMessagesMarion => const [
+        'こんにちは!AIRAです。1976年から愛される日本のクレープブランド、マリオンクレープへようこそ!マイクを押して、何でも聞いてくださいね。',
+        'ちょっと話しかけてみてください!生地は日本から直輸入で、ご注文ごとに焼きたてをお作りします。メニューのこと、聞いてくださいね。',
+        '私とお話しして、スロットゲームでクーポンをゲットしましょう!',
+      ];
+
+  @override
+  String get flavorHoujicha => 'ほうじ茶';
+  @override
+  String get flavorSavory => 'お食事系(ツナ・チキン・お好み焼き)';
+  @override
+  String get flavorStrawberryCream => 'いちごクリーム';
+  @override
+  String get flavorCustard => 'カスタード';
 
   @override
   String get surveyCta => 'アンケートに答えてクーポンをもらう';
@@ -677,6 +711,22 @@ class _EsStrings extends AppStrings {
 /// ここに無い文言は英語で表示される(足りないものは随時追加する)。
 class _MsStrings extends _EnStrings {
   const _MsStrings();
+
+  @override
+  List<String> get attractMessagesMarion => const [
+        'Hai! Saya AIRA. Selamat datang ke Marion Crêpe, jenama krep Jepun yang disayangi sejak 1976! Tekan butang mikrofon dan tanya saya apa sahaja!',
+        'Jom bersembang! Campuran krep kami datang terus dari Jepun, dan setiap krep dibuat segar mengikut pesanan. Tanya saya tentang menu kami!',
+        'Bersembang dengan saya dan main permainan slot untuk menang kupon!',
+      ];
+
+  @override
+  String get flavorHoujicha => 'Houji-cha (teh hijau panggang)';
+  @override
+  String get flavorSavory => 'Berperisa masin (Tuna, Ayam, Okonomiyaki)';
+  @override
+  String get flavorStrawberryCream => 'Krim Strawberi';
+  @override
+  String get flavorCustard => 'Kastard';
 
   @override
   String get surveyCta => 'Jawab soal selidik dan dapatkan kupon';

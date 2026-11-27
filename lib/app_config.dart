@@ -64,6 +64,10 @@ String get kAvatarAssetDir => avatarAssetDirFor(kAvatarStyle);
 /// サーバー側のテナント設定(管理画面の「スロットゲーム」)も有効になっている必要がある。
 const bool kGameEnabled = bool.fromEnvironment('GAME_ENABLED');
 
+/// 表示するブランド。'marion' のとき、呼び込みをマリオンクレープ用にする。
+/// 既定(未指定)は従来のフリーダムラーメン。ビルド時に --dart-define=BRAND=marion
+const String kBrand = String.fromEnvironment('BRAND');
+
 /// 人数センサー(AIカメラ)の「近づいた」を受けて、AIRAから声をかけるか。
 /// ビルド時に指定する: --dart-define=SENSOR_ENABLED=true
 const bool kSensorEnabled = bool.fromEnvironment('SENSOR_ENABLED');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../app_config.dart';
 import '../l10n/app_locale.dart';
 import '../l10n/app_strings.dart';
 import 'survey_api.dart';
@@ -266,11 +267,13 @@ class _SurveyFlowPageState extends State<SurveyFlowPage> {
           question: strings.questionFlavor,
           onVoiceResult: (spoken) => _applyVoiceChoice<FlavorChoice>(
             spoken,
-            kFlavorVoiceKeywords,
+            {
+              for (final c in FlavorChoice.forBrand(kBrand)) c: kFlavorVoiceKeywords[c]!,
+            },
             (choice) => _draft.flavor = choice,
           ),
           choices: [
-            for (final choice in FlavorChoice.values)
+            for (final choice in FlavorChoice.forBrand(kBrand))
               SurveyChoiceButton(
                 label: choice.label(strings),
                 selected: _draft.flavor == choice,
